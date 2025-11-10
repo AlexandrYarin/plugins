@@ -7,10 +7,8 @@ import logging
 import hashlib
 import os
 
-from plugins.postgres import read_empl_passwords, write_new_employees
-
-# from plugins.google_auth import SERVICE_ACCOUNT_INFO, SCOPES, GoogleAccountOAuth
-from plugins.google_auth import GoogleAccountOAuth
+from postgres.core import read_empl_passwords, write_new_employees
+from google_auth.core import GoogleAccountOAuth
 
 TMP_PATH = os.path.join(os.path.dirname(__file__), "tmp")
 FILE_PATH_CSV = f"{TMP_PATH}/employees_pass.csv"

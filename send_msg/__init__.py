@@ -1,1 +1,1 @@
-from .core import YandexSendMsg
+# from .core import YandexSendMsg

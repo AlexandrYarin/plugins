@@ -6,7 +6,7 @@ import time
 import socket
 from datetime import datetime
 import logging
-from .utilities import parse_email_message
+from mail_scan.utilities import parse_email_message
 
 IMAP_SERVER = "imap.yandex.ru"
 PORT = 993

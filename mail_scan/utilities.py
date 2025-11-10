@@ -11,7 +11,7 @@ import email
 import io
 import re
 import os
-from plugins.postgres import check_exist_file, insert_file_to_files
+from postgres.core import check_exist_file, insert_file_to_files
 
 
 def _decode_part_content(part, part_type):
