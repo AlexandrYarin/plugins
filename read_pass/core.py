@@ -1,5 +1,3 @@
-# from google.oauth2 import service_account
-# from googleapiclient.discovery import build
 from cryptography.fernet import Fernet
 import base64
 import csv
@@ -7,8 +5,17 @@ import logging
 import hashlib
 import os
 
-from postgres.core import read_empl_passwords, write_new_employees
-from google_auth.core import GoogleAccountOAuth
+try:
+    from postgres.core import read_empl_passwords, write_new_employees, PstgCursor
+    from google_auth.core import GoogleAccountOAuth
+except Exception:
+    import sys
+    from pathlib import Path
+
+    project_root = Path(__file__).parents[1]
+    sys.path.insert(0, str(project_root))
+    from postgres.core import PstgCursor
+    from google_auth.core import GoogleAccountOAuth
 
 TMP_PATH = os.path.join(os.path.dirname(__file__), "tmp")
 FILE_PATH_CSV = f"{TMP_PATH}/employees_pass.csv"
@@ -17,10 +24,6 @@ DOC_ID = "104SDVFmdYO07T0zhpbJTjNZk-hu1TXBpoHzpRpDPwRY"
 
 
 def _read_pass_from_nowere():
-    # credentials = service_account.Credentials.from_service_account_file(
-    #     SERVICE_ACCOUNT_INFO, scopes=SCOPES
-    # )
-    # docs_service = build("docs", "v1", credentials=credentials)
     oauth = GoogleAccountOAuth()
     service = oauth.create_docs_service()
     doc = service.documents().get(documentId=DOC_ID).execute()
@@ -69,6 +72,38 @@ def _decrypt_password_fernet(encrypted_password, phrase):
         return f"Ошибка дешифровки: {e}"
 
 
+def read_pass_site() -> dict | None:
+    def read_usrs_passwords():
+        query = """
+            SELECT username, pswd FROM site.users
+            """
+        try:
+            with PstgCursor() as db:
+                result = db.execute(query)
+                if result.rowcount > 0:
+                    employees_data = result.fetchall()
+                    return employees_data
+                else:
+                    raise ValueError("Ошибка при чтении паролей")
+
+        except Exception as error:
+            logging.error("Ошибка при работе с PostgreSQL:", error)
+            raise
+
+    data_users = {}
+    phrase = _read_pass_from_nowere()
+    data_mails_from_db = read_usrs_passwords()
+
+    for login, password in data_mails_from_db:
+        data_users[login] = _decrypt_password_fernet(password, phrase)
+    if data_users != {}:
+        logging.debug("данные успешно загружены")
+        return data_users
+    else:
+        logging.warning("данные не найдены")
+        return None
+
+
 def read_pass(manager_email=None) -> list | None | dict:
     data_mails = []
     phrase = _read_pass_from_nowere()
@@ -92,7 +127,7 @@ def read_pass(manager_email=None) -> list | None | dict:
         return None
 
 
-def _encrypt_password_fernet(password):
+def encrypt_password_fernet(password):
     """
     Шифрует пароль
     """
@@ -121,7 +156,7 @@ def add_new_employees_to_db():
             for row in reader:
                 email = row["email"]
                 password = row["password"]
-                encrypted_password = _encrypt_password_fernet(password)
+                encrypted_password = encrypt_password_fernet(password)
                 empl_data.append(tuple([email, encrypted_password]))
             write_new_employees(empl_data)
 

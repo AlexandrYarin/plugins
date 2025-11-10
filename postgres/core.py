@@ -1031,6 +1031,29 @@ def get_click_deals_for_btx():
             SELECT deal_title, region, deadline, type_nmn, files
             FROM orders.threeclick
             WHERE send_btx = false
+                AND ready_for_btx = true
+                AND deal_type = 'Опубликована новая закупка'
+            """
+    try:
+        with PstgCursor() as db:
+            result = db.execute(query)
+            click_deals = result.fetchall()
+
+            if len(click_deals) > 0:
+                return click_deals
+            else:
+                return None
+
+    except Exception as error:
+        logging.error("Ошибка при работе с PostgreSQL:", error)
+        raise
+
+
+def get_click_deals_for_btx():
+    query = """
+            SELECT deal_title, region, deadline, type_nmn, files
+            FROM orders.threeclick
+            WHERE send_btx = false
                 AND deal_type = 'Опубликована новая закупка'
                 AND ready_for_btx = true
             """
