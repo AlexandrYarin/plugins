@@ -11,7 +11,18 @@ import email
 import io
 import re
 import os
-from postgres.core import check_exist_file, insert_file_to_files
+
+try:
+    from postgres.core import check_exist_file, insert_file_to_files
+
+except ModuleNotFoundError:
+    import os
+    import sys
+
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.join(current_dir, "..")
+    sys.path.insert(0, project_root)
+    from plugins.postgres.core import check_exist_file, insert_file_to_files
 
 
 def _decode_part_content(part, part_type):

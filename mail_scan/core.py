@@ -6,7 +6,11 @@ import time
 import socket
 from datetime import datetime
 import logging
-from mail_scan.utilities import parse_email_message
+
+try:
+    from mail_scan.utilities import parse_email_message
+except ModuleNotFoundError:
+    from .utilities import parse_email_message
 
 IMAP_SERVER = "imap.yandex.ru"
 PORT = 993
@@ -267,12 +271,17 @@ class YandexMailScanner:
         """Сканирование сообщений"""
         if search_criteria is None:
             search_criteria = f'SINCE "{self.last_date}"'
-        # search_criteria = f'SINCE "{self.last_date}" FROM "3click_noreply@mts.ru"'
-        logging.info(f"Поиск писем от {self.last_date}")
+        search_criteria = 'SINCE "25-Mar-2025" BEFORE "26-Jun-2025"'
+        # logging.info(f"Поиск писем от {self.last_date}")
+        logging.info(f"Поиск писем от {search_criteria}")
+        print(f"Поиск писем от {search_criteria}")
 
         emails, scan_end_stamp = [], None
 
         for folder in folders_list:
+            # NOTE: Верменная хрень
+            if folder != "INBOX":
+                continue
             try:
                 if not self.select_folder(folder):
                     continue
@@ -300,7 +309,9 @@ class YandexMailScanner:
                 )
 
                 # Обработка сообщений
-                for num in message_list:
+                lengh_sms = len(message_list)
+                for i, num in enumerate(message_list):
+                    print(f"SMS {i + 1}/{lengh_sms}")
                     try:
                         msg_data = self._safe_operation(self._fetch_message, num)
 
