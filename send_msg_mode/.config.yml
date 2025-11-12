@@ -1,0 +1,52 @@
+CONST:
+  IMAGE_DEFAULT: "https://bitrix24public.com/streetart.bitrix24.ru/docs/pub/2ab44b7bfdb12ae3ed81a442e8673e46/showFile/?&token=afhyggdrbjiu"
+FORMS:
+  PROMT_1:
+    DOCK_NAME_DEFAULT: "Таблица"
+    SENDER: "aya@print-1.ru"
+    SUBJECT: "Тест"
+    DOC_ID: ~
+    # ---------
+    TARGET_EMAILS:
+      - ["aya@s3t.art", "Сашка"]
+    HTML_TEMPLATE: |
+      <html>
+          <body>
+              {contact_name}, хорошего дня!
+              Здарова, Брат!<br>
+              --<br>
+              С уважением,<br>
+              {second_name} {name}<br>
+              {post_line}
+              {phone_line}
+              {extra_line}
+              Почта: {sender}<br>
+              Сайт: <a href="https://str-art.ru/">https://str-art.ru/</a><br><br>
+              <img src="cid:embedded_image" alt="Изображение" style="max-width: 500px;">
+          </body>
+      </html>
+  PROMT_2:
+    DOCK_NAME_DEFAULT: "Таблица"
+    SENDER: "sr@print-1.ru"
+    SUBJECT: ~
+    DOC_ID: ~
+    # ---------
+    TARGET_EMAILS: ~ #list of list ["email", "contact_name"]
+    HTML_TEMPLATE: |
+      <html>
+          <body>
+              Привет! По торгам требуется ручная проверка номенклатуры и дозаполнение сделки, для выполнения автоматической рассылки <br>
+              Вот ссылки на сделки в Битрикс <br>
+              {links} <br>
+              Спасибо!
+              --<br>
+              С уважением,<br>
+              {second_name} {name}<br>
+              {post_line}
+              {phone_line}
+              {extra_line}
+              Почта: {sender}<br>
+              Сайт: <a href="https://str-art.ru/">https://str-art.ru/</a><br><br>
+              <img src="cid:embedded_image" alt="Изображение" style="max-width: 500px;">
+          </body>
+      </html>

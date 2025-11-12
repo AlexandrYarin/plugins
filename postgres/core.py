@@ -1,5 +1,9 @@
-import psycopg2
-from psycopg2 import Error, OperationalError, InterfaceError
+# import psycopg2
+# from psycopg2 import Error, OperationalError, InterfaceError
+
+import psycopg
+from psycopg import Error, OperationalError, InterfaceError
+
 import yaml
 import logging
 import os
@@ -14,7 +18,7 @@ class PstgCursor:
         with open(config_path, "r", encoding="utf-8") as file:
             self.config = yaml.safe_load(file)
 
-        self.conn = psycopg2.connect(**self.config["postgres"])
+        self.conn = psycopg.connect(**self.config["postgres"])
         self.cursor = self.conn.cursor()
         self.retries = retries
 
@@ -34,7 +38,7 @@ class PstgCursor:
     def reconnect(self):
         if self.conn:
             self.conn.close()
-        self.conn = psycopg2.connect(**self.config["postgres"])
+        self.conn = psycopg.connect(**self.config["postgres"])
         self.cursor = self.conn.cursor()
         logging.debug("PostgreSQL reconnected")
 
@@ -1026,12 +1030,12 @@ def scan_new_click_deals(ts_scan):
         raise
 
 
-def get_click_deals_for_btx():
+def get_click_deals_for_btx_mode():
     query = """
             SELECT deal_title, region, deadline, type_nmn, files
             FROM orders.threeclick
             WHERE send_btx = false
-                AND ready_for_btx = true
+                AND gemini_see = true
                 AND deal_type = 'Опубликована новая закупка'
             """
     try:
@@ -1054,8 +1058,8 @@ def get_click_deals_for_btx():
             SELECT deal_title, region, deadline, type_nmn, files
             FROM orders.threeclick
             WHERE send_btx = false
-                AND deal_type = 'Опубликована новая закупка'
                 AND ready_for_btx = true
+                AND deal_type = 'Опубликована новая закупка'
             """
     try:
         with PstgCursor() as db:
@@ -1157,7 +1161,7 @@ def check_exist_file(hash_file) -> None | int:
         raise
 
 
-def insert_file_to_files(file_data) -> int:
+def insert_file_to_files(file_data):
     # "filename": filename,
     # "content_type": file_type,
     # "size": file_size,
@@ -1183,13 +1187,14 @@ def insert_file_to_files(file_data) -> int:
 def get_file_content(ids: list):
     query_to_msgs = """
                 SELECT content, file_name FROM files
-                WHERE id IN %s AND file_name LIKE '%%.xls%%' 
+                WHERE id = ANY(%s) AND file_name LIKE '%%.xls%%' 
                     """
     try:
         with PstgCursor() as db:
-            result = db.execute(query_to_msgs, (tuple(ids),))
+            result = db.execute(query_to_msgs, [ids])
             if result.rowcount > 0:
                 excel_file = result.fetchone()
+                logging.warning(f"result: {excel_file}")
 
                 return excel_file
 
