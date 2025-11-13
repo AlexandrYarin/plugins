@@ -271,10 +271,9 @@ class YandexMailScanner:
         """Сканирование сообщений"""
         if search_criteria is None:
             search_criteria = f'SINCE "{self.last_date}"'
-        search_criteria = 'SINCE "25-Mar-2025" BEFORE "26-Jun-2025"'
-        # logging.info(f"Поиск писем от {self.last_date}")
+        # search_criteria = 'SINCE "25-Mar-2025" BEFORE "26-Jun-2025"'
+        logging.info(f"Поиск писем от {self.last_date}")
         logging.info(f"Поиск писем от {search_criteria}")
-        print(f"Поиск писем от {search_criteria}")
 
         emails, scan_end_stamp = [], None
 
