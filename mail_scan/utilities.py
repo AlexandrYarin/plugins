@@ -524,7 +524,7 @@ def _return_body_mail(email_message, reserv_fn: list) -> dict:
                     # Вычисление хэша
                     file_hash = hashlib.blake2b(attachment_data).hexdigest()
 
-                    raw_file_id: int | None = check_exist_file(file_hash)
+                    raw_file_id: str | None = check_exist_file(file_hash)
 
                     # Получение информации о файле
                     file_type = content_type
