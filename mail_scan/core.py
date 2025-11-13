@@ -280,8 +280,8 @@ class YandexMailScanner:
 
         for folder in folders_list:
             # NOTE: Верменная хрень
-            if folder != "INBOX":
-                continue
+            # if folder != "INBOX":
+            #     continue
             try:
                 if not self.select_folder(folder):
                     continue
@@ -311,9 +311,9 @@ class YandexMailScanner:
                 # Обработка сообщений
                 lengh_sms = len(message_list)
                 for i, num in enumerate(message_list):
-                    print(f"SMS {i + 1}/{lengh_sms}")
-                    if i == 1001:
-                        break
+                    # print(f"SMS {i + 1}/{lengh_sms}")
+                    # if i == 1001:
+                    #     break
                     try:
                         msg_data = self._safe_operation(self._fetch_message, num)
 
