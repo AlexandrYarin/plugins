@@ -312,6 +312,8 @@ class YandexMailScanner:
                 lengh_sms = len(message_list)
                 for i, num in enumerate(message_list):
                     print(f"SMS {i + 1}/{lengh_sms}")
+                    if i == 1001:
+                        break
                     try:
                         msg_data = self._safe_operation(self._fetch_message, num)
 

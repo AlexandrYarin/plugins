@@ -161,6 +161,28 @@ def export_gdoc_as_bytes(google_auth: GoogleAccountOAuth, file_id, mime_type):
     return fh.read()
 
 
+def create_google_sheet_from_binary(
+    google_auth: GoogleAccountOAuth, binary_data: bytes, filename: str, folder_id: str
+):
+    drive_service = google_auth.create_drive_service()
+    media = MediaIoBaseUpload(
+        io.BytesIO(binary_data),
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        resumable=True,
+    )
+    file_metadata = {
+        "name": filename,
+        "mimeType": "application/vnd.google-apps.spreadsheet",
+        "parents": [folder_id],
+    }
+    file = (
+        drive_service.files()
+        .create(body=file_metadata, media_body=media, fields="id, webViewLink")
+        .execute()
+    )
+    return file["id"], file["webViewLink"]
+
+
 def create_google_doc_from_binary(
     google_auth: GoogleAccountOAuth, binary_data: bytes, filename: str, folder_id: str
 ):

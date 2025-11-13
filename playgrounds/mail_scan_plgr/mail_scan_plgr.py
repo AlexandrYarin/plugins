@@ -415,39 +415,39 @@ class YandexMailScanner:
         self.close_connection()
 
 
-params_template = {
-    "status": {
-        "ALL": False,
-        "UNSEEN": False,
-        "SEEN": False,
-        "ANSWERED": False,
-        "FLAGGED": False,
-        "DRAFT": False,
-        "DELETED": False,
-    },
-    "dates": {"SINCE": None, "BEFORE": None},  # все в ковычках 1-Feb-2020
-    "addresses": {  # все в ковычках
-        "FROM": None,
-        "TO": None,
-        "CC": None,
-        "BCC": None,
-        "SUBJECT": None,
-        "BODY": None,
-        "TEXT": None,
-    },
-    "sizes": {"LARGE": None, "SMALLER": None},  # число в байтах
-    "attachments": False,  # Content-Disposition attachment -> без ковычек если надо смс с файлом
-}
-
-target = "aa@print-1.ru"
-acc = read_pass(manager_email=target)
-since_date = datetime(2025, 9, 29).strftime("%d-%b-%Y")
-before_date = datetime(2025, 10, 2).strftime("%d-%b-%Y")
-folder = ["Sent"]
-
-params = {"dates": {"SINCE": since_date, "BEFORE": before_date}}
-
-date_filter = datetime.now() - timedelta(days=60)
-
-scaner = YandexMailScanner(acc, params, date_filter, limit=20)
-_ = scaner.scan_messages(folder)
+# params_template = {
+#     "status": {
+#         "ALL": False,
+#         "UNSEEN": False,
+#         "SEEN": False,
+#         "ANSWERED": False,
+#         "FLAGGED": False,
+#         "DRAFT": False,
+#         "DELETED": False,
+#     },
+#     "dates": {"SINCE": None, "BEFORE": None},  # все в ковычках 1-Feb-2020
+#     "addresses": {  # все в ковычках
+#         "FROM": None,
+#         "TO": None,
+#         "CC": None,
+#         "BCC": None,
+#         "SUBJECT": None,
+#         "BODY": None,
+#         "TEXT": None,
+#     },
+#     "sizes": {"LARGE": None, "SMALLER": None},  # число в байтах
+#     "attachments": False,  # Content-Disposition attachment -> без ковычек если надо смс с файлом
+# }
+#
+# target = "aa@print-1.ru"
+# acc = read_pass(manager_email=target)
+# since_date = datetime(2025, 9, 29).strftime("%d-%b-%Y")
+# before_date = datetime(2025, 10, 2).strftime("%d-%b-%Y")
+# folder = ["Sent"]
+#
+# params = {"dates": {"SINCE": since_date, "BEFORE": before_date}}
+#
+# date_filter = datetime.now() - timedelta(days=60)
+#
+# scaner = YandexMailScanner(acc, params, date_filter, limit=20)
+# _ = scaner.scan_messages(folder)
