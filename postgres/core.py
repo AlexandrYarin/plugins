@@ -1143,7 +1143,7 @@ def update_click_deal_after_btx(deal_title):
         raise
 
 
-def check_exist_file(hash_file) -> None | int:
+def check_exist_file(hash_file) -> None | str:
     query = """
             SELECT id FROM files
             WHERE hash_blake2b = %s;
@@ -1154,7 +1154,7 @@ def check_exist_file(hash_file) -> None | int:
             file_id = result.fetchone()
 
             print(f"file_id in psgr: {file_id}")
-            return file_id
+            return file_id[0] if file_id else None
 
     except Exception:
         logging.critical("Ошибка в записи строчек")
