@@ -756,6 +756,8 @@ def get_hot_deals(deal_ids: list, deadline_interval: int) -> list | None:
 def read_empl_passwords():
     query = """
         SELECT email, pass_email FROM employees
+        WHERE is_active = true
+            and pass_email is not null
         """
     try:
         with PstgCursor() as db:
@@ -765,24 +767,6 @@ def read_empl_passwords():
                 return employees_data
             else:
                 raise ValueError("Ошибка при чтении паролей")
-
-    except Exception as error:
-        logging.error("Ошибка при работе с PostgreSQL:", error)
-        raise
-
-
-def write_new_employees(new_empls: list):
-    # new_empls: [(email, enc_password)]
-    query = """
-        INSERT INTO employees (email, pass_email) 
-        VALUES (%s, %s)
-        """
-    try:
-        with PstgCursor() as db:
-            for empl in new_empls:
-                _ = db.execute(query, (empl[0], empl[1]))
-            db.commit()
-            logging.info("Новые работники добавлены в БД")
 
     except Exception as error:
         logging.error("Ошибка при работе с PostgreSQL:", error)

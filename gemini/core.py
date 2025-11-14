@@ -67,7 +67,7 @@ class Gemini:
         else:
             return prompt
 
-    def generate_content(self, prompt: str):
+    def generate_content(self, prompt: str) -> dict:
         try:
             for attempt in range(self.max_attempts):
                 try:

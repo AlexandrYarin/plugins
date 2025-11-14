@@ -14,7 +14,7 @@ except Exception:
 
     project_root = Path(__file__).parents[1]
     sys.path.insert(0, str(project_root))
-    from postgres.core import PstgCursor
+    from postgres.core import PstgCursor, write_new_employees, read_empl_passwords
     from google_auth.core import GoogleAccountOAuth
 
 TMP_PATH = os.path.join(os.path.dirname(__file__), "tmp")
@@ -46,7 +46,6 @@ def _generate_key_from_phrase(phrase):
     """
     Генерирует ключ для Fernet из заготовленной фразы
     """
-
     # Создаем хеш из фразы и берем первые 32 байта для ключа
     try:
         hash_object = hashlib.sha256(phrase.encode())
@@ -139,33 +138,3 @@ def encrypt_password_fernet(password):
     # Шифруем пароль
     encrypted_password = fernet.encrypt(password.encode())
     return encrypted_password.decode()
-
-
-def add_new_employees_to_db():
-    """
-    Обработка CSV с использованием Fernet шифрования
-    """
-    try:
-        with open(FILE_PATH_CSV, "r", encoding="utf-8") as file:
-            reader = csv.DictReader(file, delimiter=";")
-
-            # Сохраняем заголовки для последующей записи
-            headers = reader.fieldnames
-            # Обрабатываем каждую строку
-            empl_data = []
-            for row in reader:
-                email = row["email"]
-                password = row["password"]
-                encrypted_password = encrypt_password_fernet(password)
-                empl_data.append(tuple([email, encrypted_password]))
-            write_new_employees(empl_data)
-
-        # Обнуляем файл, оставляя только заголовки
-        with open(FILE_PATH_CSV, "w", newline="", encoding="utf-8") as file:
-            writer = csv.DictWriter(file, fieldnames=headers, delimiter=";")
-            writer.writeheader()
-
-    except FileNotFoundError:
-        logging.error(f"Файл '{FILE_PATH_CSV}' не найден")
-    except Exception as e:
-        logging.error(f"Ошибка: {e}")
