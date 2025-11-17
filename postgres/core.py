@@ -138,11 +138,10 @@ def insert_bitrix_deals():
         raise e
 
 
+# XXX: DEPRECATED
 def insert_file(unique_file_id, deal_id, filetype, document, msg_id):
     """
     Функция для вставки файла в таблицу docs в PostgreSQL.
-    Если файл успешно добавлен, то функция вернет True.
-    Если возникла ошибка при работе с PostgreSQL, то функция вернет False.
     """
     query = """
         INSERT INTO docs (id,  deal_id, filetype, document, msg_id) 
@@ -235,7 +234,7 @@ def update_table_msgs_send(msg_id, html_body) -> bool:
         raise
 
 
-def update_table_msgs_reply(msg_id, body=None) -> None:
+def update_table_msgs_reply(msg_id, body=None, file_id=None) -> None:
     query_to_msgs = """
                     UPDATE msgs 
                     SET is_answered = true, ts_answer = NOW(), body_answer = %s
@@ -520,6 +519,7 @@ def create_msgs(*data):
         raise
 
 
+# XXX: DEPRECATED
 def get_reply_files(deal_id) -> list | None:
     query = """
             SELECT c.cmp_name, d.id, d.document, d.msg_id
@@ -527,6 +527,29 @@ def get_reply_files(deal_id) -> list | None:
             JOIN msgs as m ON d.msg_id = m.msg_id
             JOIN cmps as c ON m.company_id = c.cmp_id
             WHERE m.deal_id = %s AND d.filetype='reply' AND m.is_answered = true
+            """
+    try:
+        with PstgCursor() as db:
+            result = db.execute(query, (deal_id,))
+            if result.rowcount > 0:
+                data_dock = result.fetchall()
+                return data_dock
+            return
+
+    except Exception as error:
+        logging.exception("Ошибка при работе с PostgreSQL:", error)
+        return
+
+
+# NOTE: Новая функция которая похожа на get_reply_files
+# FIX: Доделать запрос
+def get_reply_files_mode(deal_id) -> list | None:
+    query = """
+            SELECT c.cmp_name, d.id, d.document, d.msg_id
+            FROM docs as d
+            JOIN msgs as m ON d.msg_id = m.msg_id
+            JOIN cmps as c ON m.company_id = c.cmp_id
+            WHERE m.deal_id = %s AND m.is_answered = true
             """
     try:
         with PstgCursor() as db:
@@ -773,6 +796,7 @@ def read_empl_passwords():
         raise
 
 
+# XXX: DEPRECATED
 def check_exist_dock(deal_id, msg_id, filetype) -> str | None:
     # Проверка на существование файла по таким параметрам
     query = """

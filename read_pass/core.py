@@ -1,6 +1,5 @@
 from cryptography.fernet import Fernet
 import base64
-import csv
 import logging
 import hashlib
 import os
