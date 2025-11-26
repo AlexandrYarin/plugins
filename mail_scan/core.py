@@ -20,7 +20,7 @@ except Exception:
 
     project_root = Path(__file__).parents[1]
     sys.path.insert(0, str(project_root))
-    from utilities.core import get_file_id_from_db
+    from plugins.utilities.core import get_file_id_from_db
 
 IMAP_SERVER = "imap.yandex.ru"
 PORT = 993
