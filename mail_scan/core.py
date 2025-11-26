@@ -295,15 +295,11 @@ class YandexMailScanner:
             if not self.imap_client:
                 raise ValueError("IMAP клиент не подключен")
 
+            # Экранируем имя папки если содержит пробелы
             if " " in folder_name:
                 folder_to_select = f'"{folder_name}"'
             else:
                 folder_to_select = folder_name
-
-            # ДОБАВЬТЕ ЭТО
-            logging.debug(
-                f"Attempting to select: {folder_to_select} (original: {folder_name})"
-            )
 
             normal_name = decode_imap_folder_name(folder_name)
             status, data = self.imap_client.select(folder_to_select)
@@ -312,12 +308,17 @@ class YandexMailScanner:
                 logging.info(f"Выбрана папка: {normal_name}")
                 return True
             else:
-                raise Exception(f"Ошибка выбора папки {normal_name}: {data}")
+                # Не бросаем exception для Noselect папок
+                logging.warning(
+                    f"Папка '{normal_name}' недоступна для выбора (возможно \\Noselect или удалена)"
+                )
+                return False
 
         try:
             return self._safe_operation(_select_folder)
         except Exception as e:
-            logging.error(f"Не удалось выбрать папку {folder_name}: {e}")
+            # Понижаем уровень с ERROR на WARNING, т.к. это нормальная ситуация
+            logging.warning(f"Не удалось выбрать папку {folder_name}: {e}")
             return False
 
     # XXX: DEPRECATED
