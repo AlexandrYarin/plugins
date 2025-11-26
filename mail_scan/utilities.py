@@ -531,7 +531,9 @@ def _return_body_mail(email_message, reserv_fn: list) -> dict:
                 # Извлечение данных вложения
                 attachment_data = part.get_payload(decode=True)
                 if attachment_data:
-                    file_data: dict = get_file_id_from_db(attachment_data, filename)
+                    file_data: dict = get_file_id_from_db(
+                        attachment_data, filename, verbose=True
+                    )
                     if file_data["result"] == "error":
                         raise ValueError
 
@@ -542,11 +544,6 @@ def _return_body_mail(email_message, reserv_fn: list) -> dict:
                     attachment_info["file_id"] = file_id
 
                     attachments_list.append(attachment_info)
-                    # "filename": file_name,
-                    # "content_type": content_type,
-                    # "size": size,
-                    # "hash": hash,
-                    # "content": content,
                     filename, file_type, file_size, file_hash, _ = attachment_info
                     logging.info(
                         f"Найдено вложение: {filename}, тип: {file_type}, "
