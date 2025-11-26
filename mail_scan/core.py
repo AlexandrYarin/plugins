@@ -293,7 +293,8 @@ class YandexMailScanner:
             quoted_folder_name = f'"{folder_name}"'
             normal_name = decode_imap_folder_name(folder_name)
 
-            status, data = self.imap_client.select(quoted_folder_name)
+            # status, data = self.imap_client.select(quoted_folder_name)
+            status, data = self.imap_client.select(folder_name)
 
             if status == "OK":
                 logging.info(f"Выбрана папка: {normal_name}")

@@ -544,7 +544,7 @@ def _return_body_mail(email_message, reserv_fn: list) -> dict:
                     attachment_info["file_id"] = file_id
 
                     attachments_list.append(attachment_info)
-                    filename, file_type, file_size, file_hash, _ = attachment_info
+                    filename, file_type, file_size, file_hash, _, _ = attachment_info
                     logging.info(
                         f"Найдено вложение: {filename}, тип: {file_type}, "
                         f"размер: {file_size} байт, blake2b: {file_hash[:16]}..."
