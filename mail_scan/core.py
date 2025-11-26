@@ -288,32 +288,37 @@ class YandexMailScanner:
     #         logging.error(f"Критическая ошибка получения папок: {e}")
     #         return []
 
+    def select_folder(self, folder_name):
+        """Выбор папки с надежной обработкой"""
 
-def select_folder(self, folder_name):
-    """Выбор папки с надежной обработкой"""
+        def _select_folder():
+            if not self.imap_client:
+                raise ValueError("IMAP клиент не подключен")
 
-    def _select_folder():
-        if not self.imap_client:
-            raise ValueError("IMAP клиент не подключен")
+            if " " in folder_name:
+                folder_to_select = f'"{folder_name}"'
+            else:
+                folder_to_select = folder_name
 
-        if " " in folder_name:
-            folder_to_select = f'"{folder_name}"'
-        else:
-            folder_to_select = folder_name
+            # ДОБАВЬТЕ ЭТО
+            logging.debug(
+                f"Attempting to select: {folder_to_select} (original: {folder_name})"
+            )
 
-        # ДОБАВЬТЕ ЭТО
-        logging.info(
-            f"Attempting to select: {folder_to_select} (original: {folder_name})"
-        )
+            normal_name = decode_imap_folder_name(folder_name)
+            status, data = self.imap_client.select(folder_to_select)
 
-        normal_name = decode_imap_folder_name(folder_name)
-        status, data = self.imap_client.select(folder_to_select)
+            if status == "OK":
+                logging.info(f"Выбрана папка: {normal_name}")
+                return True
+            else:
+                raise Exception(f"Ошибка выбора папки {normal_name}: {data}")
 
-        if status == "OK":
-            logging.info(f"Выбрана папка: {normal_name}")
-            return True
-        else:
-            raise Exception(f"Ошибка выбора папки {normal_name}: {data}")
+        try:
+            return self._safe_operation(_select_folder)
+        except Exception as e:
+            logging.error(f"Не удалось выбрать папку {folder_name}: {e}")
+            return False
 
     # XXX: DEPRECATED
     # def select_folder(self, folder_name):
