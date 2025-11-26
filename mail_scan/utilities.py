@@ -540,7 +540,7 @@ def _return_body_mail(email_message, reserv_fn: list) -> dict:
                     file_id = file_data["data"]["id"]
                     attachment_info = file_data["data"]["attachment_info"]
 
-                    logging.warning(f"file_id: {file_id}")
+                    logging.info(f"file_id: {file_id}")
                     attachment_info["file_id"] = file_id
 
                     attachments_list.append(attachment_info)
@@ -679,9 +679,7 @@ def _is_valid_signature(signature_text):
 
     # Проверяем длину (разумные пределы для подписи)
     if len(clean_signature) < 10 or len(clean_signature) > 500:
-        logging.warning(
-            f"Подпись не валидна, размер подписи не корректен: {clean_signature}"
-        )
+        logging.warning("Подпись не валидна, размер подписи не корректен")
         return False
 
     # Проверяем, что это не содержит признаки переписки

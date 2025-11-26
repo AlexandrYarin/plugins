@@ -1060,67 +1060,6 @@ def get_manager_tread(manager_email, subject):
         raise
 
 
-def last_scan_click():
-    query = """
-            SELECT MAX(date_msg)
-            FROM orders.threeclick
-            WHERE date_scan in
-                    (SELECT MAX(date_scan) FROM orders.threeclick)
-            """
-    try:
-        with PstgCursor() as db:
-            result = db.execute(query)
-            click_deals = result.fetchone()
-
-            return click_deals
-
-    except Exception as error:
-        logging.error("Ошибка при работе с PostgreSQL:", error)
-        raise
-
-
-def add_new_click_deal(entities_deals: list):
-    query = """
-            INSERT INTO orders.threeclick (deal_title, deal_type, msg_id, date_msg, date_scan, body_msg, files)
-            VALUES (%s,%s,%s,%s,%s,%s, %s)
-            ON CONFLICT (deal_title, deal_type) DO NOTHING
-            """
-    try:
-        with PstgCursor() as db:
-            db.cursor.executemany(query, entities_deals)
-            db.commit()
-            logging.info("Строчки запсиан в БД")
-            return True
-
-    except Exception as error:
-        logging.error("Ошибка при работе с PostgreSQL:", error)
-        raise
-
-
-def scan_new_click_deals(ts_scan):
-    query = """
-            SELECT DISTINCT ON (subject) subject, msg_id, msg_time, body, files
-            FROM orders.msgs_order
-            WHERE sender = '3click_noreply@mts.ru'
-                AND msg_time > %s
-                AND files is NOT NULL
-            """
-    try:
-        with PstgCursor() as db:
-            result = db.execute(query, (ts_scan,))
-            click_deals = result.fetchall()
-
-            print(f"click_deals: {click_deals}")
-            if len(click_deals) > 0:
-                return click_deals
-            else:
-                return None
-
-    except Exception as error:
-        logging.error("Ошибка при работе с PostgreSQL:", error)
-        raise
-
-
 def get_click_deals_for_btx_mode():
     query = """
             SELECT deal_title, region, deadline, type_nmn, files
@@ -1164,56 +1103,6 @@ def get_click_deals_for_btx():
 
     except Exception as error:
         logging.error("Ошибка при работе с PostgreSQL:", error)
-        raise
-
-
-def get_click_deals():
-    query = """
-            SELECT body_msg, deal_title, deal_type
-            FROM orders.threeclick
-            WHERE send_btx = false
-                AND deal_type = 'Опубликована новая закупка'
-                AND gemini_see = false
-                AND ready_for_btx = false
-            """
-    try:
-        with PstgCursor() as db:
-            result = db.execute(query)
-            click_deals = result.fetchall()
-
-            if len(click_deals) > 0:
-                return click_deals
-            else:
-                return None
-
-    except Exception as error:
-        logging.error("Ошибка при работе с PostgreSQL:", error)
-        raise
-
-
-def update_click_deal(update_fields: dict):
-    query = """
-            UPDATE orders.threeclick SET
-                msg_head = %s,
-                msg_deadline = %s,
-                msg_region = %s,
-                type_nmn = %s,
-                deadline = %s,
-                region = %s,
-                gemini_see = true
-            WHERE deal_title = %s
-                AND deal_type = 'Опубликована новая закупка'
-            """
-    MAX_LENGTH = 300
-    for key, filed in update_fields.items():
-        if filed is not None and len(filed) > 300:
-            update_fields[key] = filed[:MAX_LENGTH]
-    try:
-        with PstgCursor() as db:
-            _ = db.execute(query, list(update_fields.values()), autocommit=True)
-
-    except Exception:
-        logging.critical("Ошибка в записи строчек")
         raise
 
 
