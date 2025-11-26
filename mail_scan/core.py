@@ -221,9 +221,7 @@ class YandexMailScanner:
                     continue
 
                 try:
-                    # Проверяем тип объекта
                     if isinstance(folder_line, tuple):
-                        # Если tuple, берем второй элемент (обычно bytes)
                         if len(folder_line) > 1 and isinstance(folder_line[1], bytes):
                             folder_str = folder_line[1].decode("UTF-8")
                         else:
@@ -234,7 +232,14 @@ class YandexMailScanner:
                         logging.warning(f"Неизвестный тип папки: {type(folder_line)}")
                         continue
 
+                    # ДОБАВЬТЕ ЭТО ЛОГИРОВАНИЕ
+                    logging.info(f"RAW folder line: {folder_str}")
+
                     folder_name = self._parse_folder_line(folder_str)
+
+                    # И ЭТО ТОЖЕ
+                    logging.info(f"Parsed folder name: {folder_name}")
+
                     if folder_name and folder_name not in SKIP_FOLDERS:
                         folders.append(folder_name)
 
@@ -283,33 +288,32 @@ class YandexMailScanner:
     #         logging.error(f"Критическая ошибка получения папок: {e}")
     #         return []
 
-    def select_folder(self, folder_name):
-        """Выбор папки с надежной обработкой"""
 
-        def _select_folder():
-            if not self.imap_client:
-                raise ValueError("IMAP клиент не подключен")
+def select_folder(self, folder_name):
+    """Выбор папки с надежной обработкой"""
 
-            # Экранируем имя папки если содержит пробелы
-            if " " in folder_name:
-                folder_to_select = f'"{folder_name}"'
-            else:
-                folder_to_select = folder_name
+    def _select_folder():
+        if not self.imap_client:
+            raise ValueError("IMAP клиент не подключен")
 
-            normal_name = decode_imap_folder_name(folder_name)
-            status, data = self.imap_client.select(folder_to_select)
+        if " " in folder_name:
+            folder_to_select = f'"{folder_name}"'
+        else:
+            folder_to_select = folder_name
 
-            if status == "OK":
-                logging.info(f"Выбрана папка: {normal_name}")
-                return True
-            else:
-                raise Exception(f"Ошибка выбора папки {normal_name}: {data}")
+        # ДОБАВЬТЕ ЭТО
+        logging.info(
+            f"Attempting to select: {folder_to_select} (original: {folder_name})"
+        )
 
-        try:
-            return self._safe_operation(_select_folder)
-        except Exception as e:
-            logging.error(f"Не удалось выбрать папку {folder_name}: {e}")
-            return False
+        normal_name = decode_imap_folder_name(folder_name)
+        status, data = self.imap_client.select(folder_to_select)
+
+        if status == "OK":
+            logging.info(f"Выбрана папка: {normal_name}")
+            return True
+        else:
+            raise Exception(f"Ошибка выбора папки {normal_name}: {data}")
 
     # XXX: DEPRECATED
     # def select_folder(self, folder_name):
