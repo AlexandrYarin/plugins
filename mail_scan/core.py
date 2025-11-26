@@ -221,10 +221,23 @@ class YandexMailScanner:
                     continue
 
                 try:
-                    folder_str = folder_line.decode("UTF-8")
+                    # Проверяем тип объекта
+                    if isinstance(folder_line, tuple):
+                        # Если tuple, берем второй элемент (обычно bytes)
+                        if len(folder_line) > 1 and isinstance(folder_line[1], bytes):
+                            folder_str = folder_line[1].decode("UTF-8")
+                        else:
+                            continue
+                    elif isinstance(folder_line, bytes):
+                        folder_str = folder_line.decode("UTF-8")
+                    else:
+                        logging.warning(f"Неизвестный тип папки: {type(folder_line)}")
+                        continue
+
                     folder_name = self._parse_folder_line(folder_str)
                     if folder_name and folder_name not in SKIP_FOLDERS:
                         folders.append(folder_name)
+
                 except Exception as e:
                     logging.warning(f"Ошибка обработки папки: {e}")
 
@@ -235,6 +248,40 @@ class YandexMailScanner:
         except Exception as e:
             logging.error(f"Критическая ошибка получения папок: {e}")
             return []
+
+    # XXX: DEPRECATED
+    #
+    # def get_folders_list(self) -> list:
+    #     """Получение списка папок с обработкой ошибок"""
+    #
+    #     def _get_folders():
+    #         if not self.imap_client:
+    #             raise ValueError("IMAP клиент не подключен")
+    #
+    #         status, list_response = self.imap_client.list()
+    #         if status != "OK":
+    #             raise Exception(f"Ошибка получения списка папок: {status}")
+    #
+    #         folders = []
+    #         for folder_line in list_response:
+    #             if folder_line is None:
+    #                 continue
+    #
+    #             try:
+    #                 folder_str = folder_line.decode("UTF-8")
+    #                 folder_name = self._parse_folder_line(folder_str)
+    #                 if folder_name and folder_name not in SKIP_FOLDERS:
+    #                     folders.append(folder_name)
+    #             except Exception as e:
+    #                 logging.warning(f"Ошибка обработки папки: {e}")
+    #
+    #         return folders
+    #
+    #     try:
+    #         return self._safe_operation(_get_folders)
+    #     except Exception as e:
+    #         logging.error(f"Критическая ошибка получения папок: {e}")
+    #         return []
 
     def select_folder(self, folder_name):
         """Выбор папки с надежной обработкой"""
