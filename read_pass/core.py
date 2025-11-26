@@ -5,7 +5,7 @@ import hashlib
 import os
 
 try:
-    from postgres.core import read_empl_passwords, write_new_employees, PstgCursor
+    from postgres.core import read_empl_passwords, PstgCursor
     from google_auth.core import GoogleAccountOAuth
 except Exception:
     import sys
@@ -13,7 +13,7 @@ except Exception:
 
     project_root = Path(__file__).parents[1]
     sys.path.insert(0, str(project_root))
-    from postgres.core import PstgCursor, write_new_employees, read_empl_passwords
+    from postgres.core import PstgCursor, read_empl_passwords
     from google_auth.core import GoogleAccountOAuth
 
 TMP_PATH = os.path.join(os.path.dirname(__file__), "tmp")

@@ -12,6 +12,16 @@ try:
 except ModuleNotFoundError:
     from .utilities import parse_email_message
 
+try:
+    from utilities.core import get_file_id_from_db
+except Exception:
+    import sys
+    from pathlib import Path
+
+    project_root = Path(__file__).parents[1]
+    sys.path.insert(0, str(project_root))
+    from utilities.core import get_file_id_from_db
+
 IMAP_SERVER = "imap.yandex.ru"
 PORT = 993
 SKIP_FOLDERS = ["Drafts", "Drafts|template", "Spam", "Trash", "Archive"]

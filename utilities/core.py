@@ -64,12 +64,6 @@ def _detect_file_format(data: bytes) -> dict:
             "extension": "xls",
             "description": "Microsoft Excel (XLS/DOC/PPT)",
         },
-        {
-            "magic": b"PK\x03\x04",
-            "mime_type": "application/zip",
-            "extension": "zip",
-            "description": "ZIP archive (or XLSX/DOCX/JAR)",
-        },
         # Архивы
         {
             "magic": b"\x1f\x8b\x08",
@@ -107,26 +101,39 @@ def _detect_file_format(data: bytes) -> dict:
                 "description": sig["description"],
             }
 
-    # Дополнительная проверка для Office Open XML (XLSX, DOCX, PPTX)
+    # КРИТИЧНО: Проверка Office Open XML ПЕРЕД возвратом ZIP
     if data.startswith(b"PK\x03\x04"):
-        if b"xl/" in data[:1024] or b"workbook" in data[:1024]:
+        # Проверяем первые 2048 байт для надежности
+        content_chunk = data[:2048]
+
+        # XLSX содержит xl/ или workbook
+        if b"xl/" in content_chunk or b"workbook" in content_chunk:
             return {
                 "mime_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 "extension": "xlsx",
                 "description": "Microsoft Excel (XLSX)",
             }
-        elif b"word/" in data[:1024]:
+        # DOCX содержит word/
+        elif b"word/" in content_chunk or b"document.xml" in content_chunk:
             return {
                 "mime_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                 "extension": "docx",
                 "description": "Microsoft Word (DOCX)",
             }
-        elif b"ppt/" in data[:1024]:
+        # PPTX содержит ppt/
+        elif b"ppt/" in content_chunk or b"presentation" in content_chunk:
             return {
                 "mime_type": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
                 "extension": "pptx",
                 "description": "Microsoft PowerPoint (PPTX)",
             }
+
+        # Если не Office документ, то это обычный ZIP
+        return {
+            "mime_type": "application/zip",
+            "extension": "zip",
+            "description": "ZIP archive",
+        }
 
     # Проверка на текстовые файлы
     try:

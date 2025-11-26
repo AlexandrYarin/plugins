@@ -24,6 +24,16 @@ except ModuleNotFoundError:
     sys.path.insert(0, project_root)
     from plugins.postgres.core import check_exist_file, insert_file_to_files
 
+try:
+    from utilities.core import get_file_id_from_db
+except Exception:
+    import sys
+    from pathlib import Path
+
+    project_root = Path(__file__).parents[1]
+    sys.path.insert(0, str(project_root))
+    from utilities.core import get_file_id_from_db
+
 
 def _decode_part_content(part, part_type):
     """Декодирование содержимого части письма"""
@@ -521,25 +531,26 @@ def _return_body_mail(email_message, reserv_fn: list) -> dict:
                 # Извлечение данных вложения
                 attachment_data = part.get_payload(decode=True)
                 if attachment_data:
+                    file_id = get_file_id_from_db(attachment_data, filename)
                     # Вычисление хэша
-                    file_hash = hashlib.blake2b(attachment_data).hexdigest()
+                    # file_hash = hashlib.blake2b(attachment_data).hexdigest()
 
-                    raw_file_id: str | None = check_exist_file(file_hash)
-
-                    # Получение информации о файле
-                    file_type = content_type
-                    file_size = len(attachment_data)
-
-                    # Добавление информации о вложении
-                    attachment_info = {
-                        "filename": filename,
-                        "content_type": file_type,
-                        "size": file_size,
-                        "hash": file_hash,
-                        "content": attachment_data,
-                    }
-
-                    file_id = update_db_file(raw_file_id, attachment_info)
+                    # raw_file_id: str | None = check_exist_file(file_hash)
+                    #
+                    # # Получение информации о файле
+                    # file_type = content_type
+                    # file_size = len(attachment_data)
+                    #
+                    # # Добавление информации о вложении
+                    # attachment_info = {
+                    #     "filename": filename,
+                    #     "content_type": file_type,
+                    #     "size": file_size,
+                    #     "hash": file_hash,
+                    #     "content": attachment_data,
+                    # }
+                    #
+                    # file_id = update_db_file(raw_file_id, attachment_info)
                     logging.warning(f"file_id: {file_id}")
                     attachment_info["file_id"] = file_id
 

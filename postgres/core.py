@@ -1,6 +1,3 @@
-# import psycopg2
-# from psycopg2 import Error, OperationalError, InterfaceError
-
 import psycopg
 from psycopg import Error, OperationalError, InterfaceError
 
@@ -43,16 +40,29 @@ class PstgCursor:
         logging.debug("PostgreSQL reconnected")
 
     def copy_expert(self, sql_copy_command, file):
+        """
+        Совместимый метод для psycopg3, эмулирующий copy_expert из psycopg2.
+        """
         attempt = 0
         while attempt <= self.retries:
             try:
-                self.cursor.copy_expert(sql_copy_command, file)
+                # В psycopg3 используется метод copy()
+                with self.cursor.copy(sql_copy_command) as copy:
+                    # Читаем весь файл или блоками
+                    while True:
+                        data = file.read(8192)  # Читаем блоками по 8KB
+                        if not data:
+                            break
+                        copy.write(data)
+
                 logging.debug("Запись успешно добавлена в таблицу deals")
                 return
             except (OperationalError, InterfaceError) as e:
                 logging.warning(
                     f"DB error: {e}, retrying ({attempt + 1}/{self.retries})"
                 )
+                # Сбрасываем позицию файла перед повтором
+                file.seek(0)
                 self.reconnect()
                 attempt += 1
             except Exception as e:
@@ -60,6 +70,25 @@ class PstgCursor:
                 self.conn.rollback()
                 raise
         raise Exception("Failed to execute query after retries")
+
+    # def copy_expert(self, sql_copy_command, file):
+    #     attempt = 0
+    #     while attempt <= self.retries:
+    #         try:
+    #             self.cursor.copy_expert(sql_copy_command, file)
+    #             logging.debug("Запись успешно добавлена в таблицу deals")
+    #             return
+    #         except (OperationalError, InterfaceError) as e:
+    #             logging.warning(
+    #                 f"DB error: {e}, retrying ({attempt + 1}/{self.retries})"
+    #             )
+    #             self.reconnect()
+    #             attempt += 1
+    #         except Exception as e:
+    #             logging.error(f"Query failed: {e}")
+    #             self.conn.rollback()
+    #             raise
+    #     raise Exception("Failed to execute query after retries")
 
     def execute(self, query, params=None, autocommit=False):
         attempt = 0
@@ -108,7 +137,7 @@ def insert_bitrix_deals_mode(data):
 
 def insert_bitrix_deals():
     """
-    Функция для подключения к PostgreSQL и вставки одной записи в таблицу messages.
+    Функция для подключения к PostgreSQL и вставки записей из CSV в таблицу deals.
     """
     csv_file_path = f"{TMP_PATH}/bitrix_deals.csv"
     table_name = "deals"
@@ -125,17 +154,52 @@ def insert_bitrix_deals():
     )
     sql_copy_command = f"""
         COPY {table_name} ({", ".join(columns_to_insert)}) 
-        FROM STDIN WITH (FORMAT CSV, HEADER, DELIMITER ';');
-                    """
+        FROM STDIN WITH (FORMAT CSV, HEADER, DELIMITER ';')
+    """
     try:
         with PstgCursor() as db:
             with open(csv_file_path, "r", encoding="utf-8") as file:
-                db.copy_expert(sql_copy_command, file)
+                # Используем новый метод copy() вместо copy_expert()
+                with db.cursor.copy(sql_copy_command) as copy:
+                    # Читаем файл блоками или целиком
+                    copy.write(file.read())
             db.commit()
 
     except Exception as e:
         logging.exception(f"Ошибка при работе с PostgreSQL: {e}")
         raise e
+
+
+# def insert_bitrix_deals():
+#     """
+#     Функция для подключения к PostgreSQL и вставки одной записи в таблицу messages.
+#     """
+#     csv_file_path = f"{TMP_PATH}/bitrix_deals.csv"
+#     table_name = "deals"
+#     columns_to_insert = (
+#         "deal_id",
+#         "deal_title",
+#         "type_deal",
+#         "type_nmn",
+#         "who_created",
+#         "created_ts",
+#         "deadline",
+#         "dock_id",
+#         "regions",
+#     )
+#     sql_copy_command = f"""
+#         COPY {table_name} ({", ".join(columns_to_insert)})
+#         FROM STDIN WITH (FORMAT CSV, HEADER, DELIMITER ';');
+#                     """
+#     try:
+#         with PstgCursor() as db:
+#             with open(csv_file_path, "r", encoding="utf-8") as file:
+#                 db.copy_expert(sql_copy_command, file)
+#             db.commit()
+#
+#     except Exception as e:
+#         logging.exception(f"Ошибка при работе с PostgreSQL: {e}")
+#         raise e
 
 
 # XXX: DEPRECATED
@@ -161,6 +225,25 @@ def insert_file(unique_file_id, deal_id, filetype, document, msg_id):
         raise
 
 
+def upload_file_mode(file_id):
+    query = """
+            SELECT content 
+            FROM files
+            WHERE id=%s
+            """
+    try:
+        with PstgCursor() as db:
+            result = db.execute(query, (file_id,))
+            result = result.fetchone()
+            result = bytes(result[0]) if result else False
+            logging.debug("Файл извлечен из БД")
+            return result
+    except Exception:
+        logging.critical("error in upload_file")
+        raise
+
+
+# XXX: DEPRECATED
 def upload_file(file_id):
     query = """
             SELECT document 
