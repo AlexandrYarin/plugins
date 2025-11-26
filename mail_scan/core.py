@@ -290,23 +290,53 @@ class YandexMailScanner:
             if not self.imap_client:
                 raise ValueError("IMAP клиент не подключен")
 
-            quoted_folder_name = f'"{folder_name}"'
-            normal_name = decode_imap_folder_name(folder_name)
+            # Экранируем имя папки если содержит пробелы
+            if " " in folder_name:
+                folder_to_select = f'"{folder_name}"'
+            else:
+                folder_to_select = folder_name
 
-            # status, data = self.imap_client.select(quoted_folder_name)
-            status, data = self.imap_client.select(folder_name)
+            normal_name = decode_imap_folder_name(folder_name)
+            status, data = self.imap_client.select(folder_to_select)
 
             if status == "OK":
                 logging.info(f"Выбрана папка: {normal_name}")
                 return True
             else:
-                raise Exception(f"Ошибка выбора папки {folder_name}: {data}")
+                raise Exception(f"Ошибка выбора папки {normal_name}: {data}")
 
         try:
             return self._safe_operation(_select_folder)
         except Exception as e:
             logging.error(f"Не удалось выбрать папку {folder_name}: {e}")
             return False
+
+    # XXX: DEPRECATED
+    # def select_folder(self, folder_name):
+    #
+    #     """Выбор папки с надежной обработкой"""
+    #
+    #     def _select_folder():
+    #         if not self.imap_client:
+    #             raise ValueError("IMAP клиент не подключен")
+    #
+    #         quoted_folder_name = f'"{folder_name}"'
+    #         normal_name = decode_imap_folder_name(folder_name)
+    #
+    #         # status, data = self.imap_client.select(quoted_folder_name)
+    #         status, data = self.imap_client.select(folder_name)
+    #
+    #         if status == "OK":
+    #             logging.info(f"Выбрана папка: {normal_name}")
+    #             return True
+    #         else:
+    #             raise Exception(f"Ошибка выбора папки {folder_name}: {data}")
+    #
+    #     try:
+    #         return self._safe_operation(_select_folder)
+    #     except Exception as e:
+    #         logging.error(f"Не удалось выбрать папку {folder_name}: {e}")
+    #         return False
 
     def _fetch_message(self, num):
         """Получение сообщения с обработкой ошибок"""
