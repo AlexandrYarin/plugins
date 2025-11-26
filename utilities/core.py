@@ -169,7 +169,6 @@ def get_file_id_from_db(content: bytes, file_name: str | None, verbose=False) ->
     try:
         file_hash = hashlib.blake2b(content).hexdigest()
         is_exists: None | str | tuple = check_exist_file(file_hash, data=True)
-        logging.info(f"is_exists: {is_exists}")
 
         result["data"] = {
             "len": len(content),
