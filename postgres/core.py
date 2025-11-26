@@ -1234,18 +1234,26 @@ def update_click_deal_after_btx(deal_title):
         raise
 
 
-def check_exist_file(hash_file) -> None | str:
+def check_exist_file(hash_file, data=False) -> None | str | tuple:
     query = """
             SELECT id FROM files
             WHERE hash_blake2b = %s;
             """
+    if data:
+        query = """
+                SELECT id, hash_blake2b, content_type, size, content, file_name
+                FROM files
+                WHERE hash_blake2b = %s;
+                """
+
     try:
         with PstgCursor() as db:
             result = db.execute(query, (hash_file,))
-            file_id = result.fetchone()
+            data_db = result.fetchone()
 
-            print(f"file_id in psgr: {file_id}")
-            return file_id[0] if file_id else None
+            if data:
+                return data_db
+            return data_db[0] if data_db else None
 
     except Exception:
         logging.critical("Ошибка в записи строчек")

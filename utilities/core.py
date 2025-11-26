@@ -168,7 +168,7 @@ def get_file_id_from_db(content: bytes, file_name: str | None, verbose=False) ->
 
     try:
         file_hash = hashlib.blake2b(content).hexdigest()
-        is_exists = check_exist_file(file_hash)
+        is_exists: None | str | tuple = check_exist_file(file_hash, data=True)
         logging.info(f"is_exists: {is_exists}")
 
         result["data"] = {
@@ -190,9 +190,30 @@ def get_file_id_from_db(content: bytes, file_name: str | None, verbose=False) ->
             file_id: int = insert_file_to_files(attachment_info)
             if file_id is None:
                 raise ValueError("Не вернул file_id после insert в таблицу files")
+
             result["data"]["id"] = file_id
+            if verbose:
+                result["data"]["attachment_info"] = attachment_info
+
         else:
-            result["data"]["id"] = is_exists
+            if isinstance(is_exists, tuple) and len(is_exists) == 6:
+                file_id, hash, content_type, size, content, file_name = is_exists
+
+                attachment_info = {
+                    "filename": file_name,
+                    "content_type": content_type,
+                    "size": size,
+                    "hash": hash,
+                    "content": content,
+                }
+                result["data"]["id"] = file_id
+                if verbose:
+                    result["data"]["attachment_info"] = attachment_info
+            else:
+                logging.error(
+                    f"is_exists не является tuple или его длина != 6 is_exists: {is_exists}"
+                )
+                raise ValueError
 
         result["result"] = "success"
 

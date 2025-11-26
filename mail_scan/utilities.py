@@ -531,31 +531,23 @@ def _return_body_mail(email_message, reserv_fn: list) -> dict:
                 # Извлечение данных вложения
                 attachment_data = part.get_payload(decode=True)
                 if attachment_data:
-                    file_id = get_file_id_from_db(attachment_data, filename)
-                    # Вычисление хэша
-                    # file_hash = hashlib.blake2b(attachment_data).hexdigest()
+                    file_data: dict = get_file_id_from_db(attachment_data, filename)
+                    if file_data["result"] == "error":
+                        raise ValueError
 
-                    # raw_file_id: str | None = check_exist_file(file_hash)
-                    #
-                    # # Получение информации о файле
-                    # file_type = content_type
-                    # file_size = len(attachment_data)
-                    #
-                    # # Добавление информации о вложении
-                    # attachment_info = {
-                    #     "filename": filename,
-                    #     "content_type": file_type,
-                    #     "size": file_size,
-                    #     "hash": file_hash,
-                    #     "content": attachment_data,
-                    # }
-                    #
-                    # file_id = update_db_file(raw_file_id, attachment_info)
+                    file_id = file_data["data"]["id"]
+                    attachment_info = file_data["data"]["attachment_info"]
+
                     logging.warning(f"file_id: {file_id}")
                     attachment_info["file_id"] = file_id
 
                     attachments_list.append(attachment_info)
-
+                    # "filename": file_name,
+                    # "content_type": content_type,
+                    # "size": size,
+                    # "hash": hash,
+                    # "content": content,
+                    filename, file_type, file_size, file_hash, _ = attachment_info
                     logging.info(
                         f"Найдено вложение: {filename}, тип: {file_type}, "
                         f"размер: {file_size} байт, blake2b: {file_hash[:16]}..."
