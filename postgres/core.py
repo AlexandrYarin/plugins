@@ -170,38 +170,6 @@ def insert_bitrix_deals():
         raise e
 
 
-# def insert_bitrix_deals():
-#     """
-#     Функция для подключения к PostgreSQL и вставки одной записи в таблицу messages.
-#     """
-#     csv_file_path = f"{TMP_PATH}/bitrix_deals.csv"
-#     table_name = "deals"
-#     columns_to_insert = (
-#         "deal_id",
-#         "deal_title",
-#         "type_deal",
-#         "type_nmn",
-#         "who_created",
-#         "created_ts",
-#         "deadline",
-#         "dock_id",
-#         "regions",
-#     )
-#     sql_copy_command = f"""
-#         COPY {table_name} ({", ".join(columns_to_insert)})
-#         FROM STDIN WITH (FORMAT CSV, HEADER, DELIMITER ';');
-#                     """
-#     try:
-#         with PstgCursor() as db:
-#             with open(csv_file_path, "r", encoding="utf-8") as file:
-#                 db.copy_expert(sql_copy_command, file)
-#             db.commit()
-#
-#     except Exception as e:
-#         logging.exception(f"Ошибка при работе с PostgreSQL: {e}")
-#         raise e
-
-
 # XXX: DEPRECATED
 def insert_file(unique_file_id, deal_id, filetype, document, msg_id):
     """
@@ -320,7 +288,7 @@ def update_table_msgs_send(msg_id, html_body) -> bool:
 def update_table_msgs_reply(msg_id, body=None, file_id=None) -> None:
     query_to_msgs = """
                     UPDATE msgs 
-                    SET is_answered = true, ts_answer = NOW(), body_answer = %s
+                    SET is_answered = true, ts_answer = NOW(), body_answer = %s, dock_id = %s
                     WHERE msg_id = %s
                     """
     if body is None:
@@ -334,6 +302,7 @@ def update_table_msgs_reply(msg_id, body=None, file_id=None) -> None:
                 query_to_msgs,
                 (
                     body,
+                    file_id,
                     msg_id,
                 ),
                 autocommit=True,
@@ -625,13 +594,12 @@ def get_reply_files(deal_id) -> list | None:
 
 
 # NOTE: Новая функция которая похожа на get_reply_files
-# FIX: Доделать запрос
 def get_reply_files_mode(deal_id) -> list | None:
     query = """
-            SELECT c.cmp_name, d.id, d.document, d.msg_id
-            FROM docs as d
-            JOIN msgs as m ON d.msg_id = m.msg_id
-            JOIN cmps as c ON m.company_id = c.cmp_id
+            SELECT c.cmp_name, f.id, f.content
+            FROM files AS f
+            JOIN msgs AS m ON f.id = m.dock_id
+            JOIN cmps AS c ON m.company_id = c.cmp_id
             WHERE m.deal_id = %s AND m.is_answered = true
             """
     try:
@@ -1165,7 +1133,7 @@ def insert_file_to_files(file_data):
             result = db.execute(query, list(file_data.values()), autocommit=True)
             file_id = result.fetchone()
 
-            return file_id
+            return file_id[0] if file_id else None
 
     except Exception:
         logging.critical("Ошибка в записи строчек")
