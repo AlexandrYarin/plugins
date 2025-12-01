@@ -149,44 +149,6 @@ class GoogleAccountOAuth:
         self.close_all_services()
 
 
-def create_new_sheet_gspread(
-    client, spreadsheet_id: str, title: str, rows=300, cols=26
-) -> dict:
-    """
-    Создает новый лист в таблице через gspread и возвращает его имя.
-
-    :param google_oauth: гугл класс
-    :param spreadsheet_id: ID Google таблицы
-    :param title: Желаемое имя нового листа
-    :param rows: Количество строк (по умолчанию 1000)
-    :param cols: Количество колонок (по умолчанию 26)
-    :return: Имя созданного листа
-    """
-    try:
-        # Авторизуемся через ваш существующий метод
-
-        # Открываем таблицу по ID
-        sh = client.open_by_key(spreadsheet_id)
-
-        # Создаем лист
-        worksheet = sh.add_worksheet(title=title, rows=rows, cols=cols)
-
-        logging.info(f"✅ Лист '{worksheet.title}' успешно создан")
-        return {
-            "title": worksheet.title,
-            "id": worksheet.id,  # gid листа (integer)
-            "url": worksheet.url,  # Прямая ссылка на вкладку
-            "rows": worksheet.row_count,
-            "cols": worksheet.col_count,
-            "index": worksheet.index,  # Позиция вкладки (0, 1, 2...)
-            "parent_id": sh.id,  # ID родительской таблицы
-        }
-
-    except Exception as e:
-        logging.error(f"❌ Ошибка при создании листа (gspread): {e}")
-        raise e
-
-
 def export_gdoc_as_bytes(google_auth: GoogleAccountOAuth, file_id, mime_type):
     service = google_auth.create_drive_service()
     request = service.files().export_media(fileId=file_id, mimeType=mime_type)
