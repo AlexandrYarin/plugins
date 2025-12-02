@@ -1190,9 +1190,10 @@ def get_count_stat_msgs_check():
                 stat_msg = result.fetchall()
                 return stat_msg
             else:
-                raise ValueError(
-                    "Ошибка при запросе статистики о проверенных сообщениях"
-                )
+                # raise ValueError(
+                #     "Ошибка при запросе статистики о проверенных сообщениях"
+                # )
+                return
 
     except Exception as error:
         raise error
