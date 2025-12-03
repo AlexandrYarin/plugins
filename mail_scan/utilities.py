@@ -610,14 +610,64 @@ def convert_subject(msg_subject: str) -> str:
 
 
 def convert_email(email: str) -> str:
-    new_email = ""
-    pattern = re.compile(r"[\w\.-]+@[\w\.-]+")
+    """Извлекает email-адрес из строки"""
+    if not email:
+        raise ValueError("Пустой email")
+
+    # Попытка извлечь из угловых скобок: "Name <email@domain.com>"
+    pattern = re.compile(r"<([^>]+)>")
     result = pattern.search(email)
+
     if result:
-        new_email = result.group(0)
-    if new_email == "":
-        raise ValueError("Не найден email")
-    return new_email
+        newemail = result.group(1)
+    else:
+        # Если угловых скобок нет, проверяем на наличие @
+        # Возможные форматы: "email@domain.com" или "Name email@domain.com"
+        email_pattern = re.compile(r"([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})")
+        match = email_pattern.search(email)
+
+        if match:
+            newemail = match.group(1)
+        else:
+            # Если ничего не найдено, используем оригинал (но логируем)
+            print(f"Не удалось извлечь email из: {email}")
+            newemail = email.strip()
+
+    if not newemail or "@" not in newemail:
+        raise ValueError(f"Некорректный email: {email}")
+
+    return newemail
+
+
+def convert_from_func(msg) -> str:
+    """Извлекает и обрабатывает адрес отправителя"""
+    try:
+        from_header = decode_mime_words(msg.get("From", ""))
+        if not from_header:
+            logging.error("Заголовок From отсутствует")
+            return "unknown@unknown.com"
+
+        return convert_email(from_header)
+    except ValueError as e:
+        logging.error(f"Ошибка извлечения email из From: {e}")
+        # Возвращаем placeholder вместо падения
+        return "unknown@unknown.com"
+    except Exception as e:
+        logging.error(f"Неожиданная ошибка при обработке From: {e}")
+        return "unknown@unknown.com"
+
+
+# XXX: DEPRECATED
+#
+# def convert_email(email: str) -> str:
+#     new_email = ""
+#     pattern = re.compile(r"[\w\.-]+@[\w\.-]+")
+#     result = pattern.search(email)
+#     if result:
+#         new_email = result.group(0)
+#     if new_email == "":
+#         raise ValueError("Не найден email")
+#     return new_email
 
 
 def convert_receivers(msg) -> list:
@@ -694,7 +744,7 @@ def _is_valid_signature(signature_text):
     # Проверяем количество строк (подпись обычно не очень длинная)
     lines = clean_signature.split("\n")
     if len(lines) > 16:  # Слишком много строк для подписи
-        logging.warning(
+        logging.debug(
             f"Подпись не валидна,слишком много строчек для подписи: {clean_signature}"
         )
         return False
@@ -789,7 +839,9 @@ def parse_email_message(msg_data, date_filter):
 
     subject = convert_subject(decode_mime_words(msg.get("Subject", "")))
     receivers = convert_receivers(msg)
-    convert_from = convert_email(decode_mime_words(msg.get("From", "")))
+    # NOTE: поменял на новую функцию convert_from_func
+    # convert_from = convert_email(decode_mime_words(msg.get("From", "")))
+    convert_from = convert_from_func(msg)
     reference = convert_reference(msg)
 
     msg_content: dict = _return_body_mail(msg, [subject, convert_from])
