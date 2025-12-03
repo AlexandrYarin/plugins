@@ -561,8 +561,8 @@ def _return_body_mail(email_message, reserv_fn: list) -> dict:
                 html_body = _decode_part_content(part, "html")
                 logging.debug("Найдена и обработана текстовая часть (html)")
 
-        logging.info(f"Обработано частей письма: {part_count}")
-        logging.info(f"Найдено вложений: {len(attachments_list)}")
+        logging.debug(f"Обработано частей письма: {part_count}")
+        logging.debug(f"Найдено вложений: {len(attachments_list)}")
 
         # Приоритет text/plain над text/html
         body = plain_text_body or html_body
@@ -571,9 +571,9 @@ def _return_body_mail(email_message, reserv_fn: list) -> dict:
         logging.debug("Письмо не многочастное, обрабатываем как единое целое")
         body = _decode_part_content(email_message, "simple")
 
-    logging.info("---Начинаем извлечение основного содержимого")
+    logging.debug("---Начинаем извлечение основного содержимого")
     final_body, signature = extract_email_body_universal_mode(body)
-    logging.info("---Завершена обработка письма")
+    logging.debug("---Завершена обработка письма")
 
     return {
         "body": final_body,

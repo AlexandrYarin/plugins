@@ -295,7 +295,7 @@ class YandexMailScanner:
             status, data = self.imap_client.select(folder_to_select)
 
             if status == "OK":
-                logging.info(f"Выбрана папка: {normal_name}")
+                logging.debug(f"Выбрана папка: {normal_name}")
                 return True
             else:
                 # Не бросаем exception для Noselect папок
