@@ -12,15 +12,6 @@ try:
 except ModuleNotFoundError:
     from .utilities import parse_email_message
 
-try:
-    from utilities.core import get_file_id_from_db
-except Exception:
-    import sys
-    from pathlib import Path
-
-    project_root = Path(__file__).parents[1]
-    sys.path.insert(0, str(project_root))
-    from plugins.utilities.core import get_file_id_from_db
 
 IMAP_SERVER = "imap.yandex.ru"
 PORT = 993
@@ -232,8 +223,7 @@ class YandexMailScanner:
                         logging.warning(f"Неизвестный тип папки: {type(folder_line)}")
                         continue
 
-                    # ДОБАВЬТЕ ЭТО ЛОГИРОВАНИЕ
-                    logging.info(f"RAW folder line: {folder_str}")
+                    # logging.info(f"RAW folder line: {folder_str}")
 
                     folder_name = self._parse_folder_line(folder_str)
 
@@ -418,12 +408,12 @@ class YandexMailScanner:
                             try:
                                 raw_email = msg_data[1]
                                 # Логируем первые 200 символов письма
-                                email_preview = raw_email.decode(
-                                    "utf-8", errors="ignore"
-                                )[:200]
-                                logging.info(
-                                    f"Сообщение {num} preview: {email_preview}"
-                                )
+                                # email_preview = raw_email.decode(
+                                #     "utf-8", errors="ignore"
+                                # )[:200]
+                                # logging.info(
+                                #     f"Сообщение {num} preview: {email_preview}"
+                                # )
 
                                 email_info = parse_email_message(
                                     msg_data, self.last_timestamp

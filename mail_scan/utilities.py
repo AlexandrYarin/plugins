@@ -22,7 +22,7 @@ except ModuleNotFoundError:
     current_dir = os.path.dirname(os.path.abspath(__file__))
     project_root = os.path.join(current_dir, "..")
     sys.path.insert(0, project_root)
-    from plugins.postgres.core import check_exist_file, insert_file_to_files
+    from plugins.postgres.core import insert_file_to_files
 
 try:
     from utilities.core import get_file_id_from_db
@@ -729,7 +729,7 @@ def extract_signature_from_text(text: str) -> str | None:
         # Пытаемся найти только '--'
         separator_pos = text.find("--")
         if separator_pos == -1:
-            logging.warning("Разделитель подписи '-- ' не найден")
+            logging.info("Разделитель подписи '-- ' не найден")
             return None
     else:
         # Если нашли ' -- ', начинаем с позиции после пробела
