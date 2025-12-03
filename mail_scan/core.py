@@ -369,7 +369,6 @@ class YandexMailScanner:
         if search_criteria is None:
             search_criteria = f'SINCE "{self.last_date}"'
         # search_criteria = 'SINCE "25-Mar-2025" BEFORE "26-Jun-2025"'
-        logging.info(f"Поиск писем от {self.last_date}")
         logging.info(f"Поиск писем от {search_criteria}")
 
         emails, scan_end_stamp = [], None
@@ -378,6 +377,7 @@ class YandexMailScanner:
             # NOTE: Верменная хрень
             # if folder != "INBOX":
             #     continue
+
             try:
                 if not self.select_folder(folder):
                     continue
@@ -395,17 +395,20 @@ class YandexMailScanner:
 
                 if message_ids is None:
                     continue
+                human_folder_name = decode_imap_folder_name(folder)
                 if not message_ids[0]:
-                    logging.info(f"В папке '{folder}' новых сообщений не найдено")
+                    logging.info(
+                        f"В папке {human_folder_name} новых сообщений не найдено"
+                    )
                     continue
 
                 message_list = message_ids[0].split()
                 logging.info(
-                    f"Найдено {len(message_list)} сообщений в папке '{folder}'"
+                    f"Найдено {len(message_list)} сообщений в папке '{human_folder_name}'"
                 )
 
                 # Обработка сообщений
-                lengh_sms = len(message_list)
+                length_sms = len(message_list)
                 for i, num in enumerate(message_list):
                     # print(f"SMS {i + 1}/{lengh_sms}")
                     # if i == 1001:

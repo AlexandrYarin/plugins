@@ -462,13 +462,6 @@ def _is_allowed_attachment(filename, content_type) -> bool:
     return False
 
 
-def update_db_file(file_id, file_data) -> int:
-    if file_id is None:
-        new_file_id: int = insert_file_to_files(file_data)
-        return new_file_id
-    return file_id
-
-
 def _check_file_name(filename: str, reserv: list) -> str:
     if "�" in filename:
         logging.warning(
@@ -540,12 +533,12 @@ def _return_body_mail(email_message, reserv_fn: list) -> dict:
                     file_id = file_data["data"]["id"]
                     attachment_info = file_data["data"]["attachment_info"]
 
-                    logging.info(f"file_id: {file_id}")
+                    logging.debug(f"file_id: {file_id}")
                     attachment_info["file_id"] = file_id
 
                     attachments_list.append(attachment_info)
                     filename, file_type, file_size, file_hash, _, _ = attachment_info
-                    logging.info(
+                    logging.debug(
                         f"Найдено вложение: {filename}, тип: {file_type}, "
                         f"размер: {file_size} байт, blake2b: {file_hash[:16]}..."
                     )
@@ -679,7 +672,7 @@ def _is_valid_signature(signature_text):
 
     # Проверяем длину (разумные пределы для подписи)
     if len(clean_signature) < 10 or len(clean_signature) > 500:
-        logging.warning("Подпись не валидна, размер подписи не корректен")
+        logging.debug("Подпись не валидна, размер подписи не корректен")
         return False
 
     # Проверяем, что это не содержит признаки переписки
@@ -695,7 +688,7 @@ def _is_valid_signature(signature_text):
     ]
 
     if any(keyword in clean_signature.lower() for keyword in conversation_keywords):
-        logging.info(f"Подпись не валидна, лишние слова в подписи: {clean_signature}")
+        logging.debug(f"Подпись не валидна, лишние слова в подписи: {clean_signature}")
         return False
 
     # Проверяем количество строк (подпись обычно не очень длинная)
@@ -727,7 +720,7 @@ def extract_signature_from_text(text: str) -> str | None:
         # Пытаемся найти только '--'
         separator_pos = text.find("--")
         if separator_pos == -1:
-            logging.info("Разделитель подписи '-- ' не найден")
+            logging.debug("Разделитель подписи '-- ' не найден")
             return None
     else:
         # Если нашли ' -- ', начинаем с позиции после пробела
@@ -753,7 +746,7 @@ def extract_signature_from_text(text: str) -> str | None:
     if _is_valid_signature(signature_text):
         return signature_text
     else:
-        logging.warning("Подпись не прошла валидацию")
+        logging.debug("Подпись не прошла валидацию")
         return None
 
 
