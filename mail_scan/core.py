@@ -41,6 +41,7 @@ class YandexMailScanner:
         self.imap_client = None
         self.last_date = last_date
         self.last_timestamp = last_timestamp
+        self.current_folder = None
 
         # Настройки надежности
         self.max_retries = 3
@@ -130,11 +131,26 @@ class YandexMailScanner:
             return False
 
     def _reconnect_if_needed(self):
-        """Автоматическое переподключение при необходимости"""
         if not self._check_connection():
-            logging.info("Переподключаемся...")
-            return self.connect_to_account()
+            logging.info("Переподключение...")
+            previous_folder = self.current_folder  # Сохранить папку
+            if self.connect_to_account():
+                # Восстановить выбор папки после переподключения
+                if previous_folder:
+                    logging.info(f"Восстановление выбора папки: {previous_folder}")
+                    return self.select_folder(previous_folder)
+                return True
+            return False
         return True
+
+    # XXX: DEPRECATED
+    #
+    # def _reconnect_if_needed(self):
+    #     """Автоматическое переподключение при необходимости"""
+    #     if not self._check_connection():
+    #         logging.info("Переподключаемся...")
+    #         return self.connect_to_account()
+    #     return True
 
     def _safe_operation(self, operation_func, *args, **kwargs):
         """Безопасное выполнение IMAP операций с автоматическим переподключением"""
@@ -163,13 +179,6 @@ class YandexMailScanner:
                     time.sleep(self.retry_delay * (attempt + 1))  # Увеличиваем задержку
                 else:
                     raise
-
-            # except imaplib.IMAP4.abort as e:
-            #     logging.warning(f"IMAP операция прервана (попытка {attempt + 1}): {e}")
-            #     if attempt < self.max_retries - 1:
-            #         time.sleep(self.retry_delay)
-            #     else:
-            #         raise
 
             except Exception as e:
                 logging.error(f"Ошибка в IMAP операции: {e}")
@@ -223,12 +232,11 @@ class YandexMailScanner:
                         logging.warning(f"Неизвестный тип папки: {type(folder_line)}")
                         continue
 
-                    # logging.info(f"RAW folder line: {folder_str}")
+                    logging.debug(f"RAW folder line: {folder_str}")
 
                     folder_name = self._parse_folder_line(folder_str)
 
-                    # И ЭТО ТОЖЕ
-                    logging.info(f"Parsed folder name: {folder_name}")
+                    logging.debug(f"Parsed folder name: {folder_name}")
 
                     if folder_name and folder_name not in SKIP_FOLDERS:
                         folders.append(folder_name)
@@ -295,6 +303,7 @@ class YandexMailScanner:
             status, data = self.imap_client.select(folder_to_select)
 
             if status == "OK":
+                self.current_folder = folder_name
                 logging.debug(f"Выбрана папка: {normal_name}")
                 return True
             else:
@@ -307,8 +316,8 @@ class YandexMailScanner:
         try:
             return self._safe_operation(_select_folder)
         except Exception as e:
-            # Понижаем уровень с ERROR на WARNING, т.к. это нормальная ситуация
             logging.warning(f"Не удалось выбрать папку {folder_name}: {e}")
+            self.current_folder = None
             return False
 
     # XXX: DEPRECATED

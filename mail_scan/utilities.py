@@ -695,14 +695,12 @@ def _is_valid_signature(signature_text):
     ]
 
     if any(keyword in clean_signature.lower() for keyword in conversation_keywords):
-        logging.warning(
-            f"Подпись не валидна, лишние слова в подписи: {clean_signature}"
-        )
+        logging.info(f"Подпись не валидна, лишние слова в подписи: {clean_signature}")
         return False
 
     # Проверяем количество строк (подпись обычно не очень длинная)
     lines = clean_signature.split("\n")
-    if len(lines) > 10:  # Слишком много строк для подписи
+    if len(lines) > 16:  # Слишком много строк для подписи
         logging.warning(
             f"Подпись не валидна,слишком много строчек для подписи: {clean_signature}"
         )
@@ -741,7 +739,7 @@ def extract_signature_from_text(text: str) -> str | None:
     # Проверяем наличие CHECKER
     checker_pos = potential_signature.find(CHECKER)
     if checker_pos == -1:
-        logging.warning(f"CHECKER '{CHECKER}' не найден в подписи")
+        logging.debug(f"CHECKER '{CHECKER}' не найден в подписи")
         return None
 
     # Конец подписи = позиция после CHECKER
