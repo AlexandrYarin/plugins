@@ -832,7 +832,7 @@ def parse_email_message(msg_data, date_filter):
     msg_date = _parse_date(msg.get("Date"))
     if date_filter is not None:
         if msg_date < date_filter:
-            logging.warning(
+            logging.debug(
                 f"Это пиьсмо уже сканировали. msg_date: {msg_date}, date_filter: {date_filter}"
             )
             return
@@ -840,6 +840,7 @@ def parse_email_message(msg_data, date_filter):
     subject = convert_subject(decode_mime_words(msg.get("Subject", "")))
     receivers = convert_receivers(msg)
     # NOTE: поменял на новую функцию convert_from_func
+    #
     # convert_from = convert_email(decode_mime_words(msg.get("From", "")))
     convert_from = convert_from_func(msg)
     reference = convert_reference(msg)
