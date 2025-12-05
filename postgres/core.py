@@ -212,50 +212,33 @@ def upload_file_mode(file_id):
 
 
 # XXX: DEPRECATED
-def upload_file(file_id):
-    query = """
-            SELECT document 
-            FROM docs
-            WHERE id=%s
-            """
-    try:
-        with PstgCursor() as db:
-            result = db.execute(query, (file_id,))
-            result = result.fetchone()
-            result = bytes(result[0]) if result else False
-            logging.debug("Файл извлечен из БД")
-            return result
-    except Exception:
-        logging.critical("error in upload_file")
-        raise
-
-
-def check_dock_id(doc_id):
-    """
-    Проверяет наличие записи с заданным file_id в таблице files.
-    Args:
-        doc_id: Идентификатор файла для поиска в базе данных.
-    Returns:
-        True: если запись с таким file_id отсутствует в базе данных.
-        False: если запись с таким file_id существует в базе данных.
-    """
-    query = """
-            SELECT * FROM docs 
-            WHERE file_id = %s
-            """
-    try:
-        with PstgCursor() as db:
-            result = db.execute(query, (doc_id,))
-            rows = result.fetchone()
-            if rows is None:
-                logging.debug("Файла нет в БД")
-                return True
-            else:
-                logging.debug("Файл существует в БД")
-                return False
-    except Exception:
-        logging.error("Ошибка при работе с PostgreSQL в ставке файла")
-        raise
+#
+# def check_dock_id(doc_id):
+#     """
+#     Проверяет наличие записи с заданным file_id в таблице files.
+#     Args:
+#         doc_id: Идентификатор файла для поиска в базе данных.
+#     Returns:
+#         True: если запись с таким file_id отсутствует в базе данных.
+#         False: если запись с таким file_id существует в базе данных.
+#     """
+#     query = """
+#             SELECT * FROM docs
+#             WHERE file_id = %s
+#             """
+#     try:
+#         with PstgCursor() as db:
+#             result = db.execute(query, (doc_id,))
+#             rows = result.fetchone()
+#             if rows is None:
+#                 logging.debug("Файла нет в БД")
+#                 return True
+#             else:
+#                 logging.debug("Файл существует в БД")
+#                 return False
+#     except Exception:
+#         logging.error("Ошибка при работе с PostgreSQL в ставке файла")
+#         raise
 
 
 def update_table_msgs_send(msg_id, html_body) -> bool:
@@ -571,29 +554,6 @@ def create_msgs(*data):
         raise
 
 
-# XXX: DEPRECATED
-def get_reply_files(deal_id) -> list | None:
-    query = """
-            SELECT c.cmp_name, d.id, d.document, d.msg_id
-            FROM docs as d
-            JOIN msgs as m ON d.msg_id = m.msg_id
-            JOIN cmps as c ON m.company_id = c.cmp_id
-            WHERE m.deal_id = %s AND d.filetype='reply' AND m.is_answered = true
-            """
-    try:
-        with PstgCursor() as db:
-            result = db.execute(query, (deal_id,))
-            if result.rowcount > 0:
-                data_dock = result.fetchall()
-                return data_dock
-            return
-
-    except Exception as error:
-        logging.exception("Ошибка при работе с PostgreSQL:", error)
-        return
-
-
-# NOTE: Новая функция которая похожа на get_reply_files
 def get_reply_files_mode(deal_id) -> list | None:
     query = """
             SELECT c.cmp_name, f.id, f.content
@@ -841,38 +801,6 @@ def read_empl_passwords():
                 return employees_data
             else:
                 raise ValueError("Ошибка при чтении паролей")
-
-    except Exception as error:
-        logging.error("Ошибка при работе с PostgreSQL:", error)
-        raise
-
-
-# XXX: DEPRECATED
-def check_exist_dock(deal_id, msg_id, filetype) -> str | None:
-    # Проверка на существование файла по таким параметрам
-    query = """
-            SELECT id 
-            FROM docs 
-            WHERE deal_id = %s 
-            AND msg_id = %s 
-            AND filetype = %s
-            LIMIT 1;
-            """
-    try:
-        with PstgCursor() as db:
-            result = db.execute(
-                query,
-                (
-                    deal_id,
-                    msg_id,
-                    filetype,
-                ),
-            )
-            doc_id = result.fetchone()
-            if doc_id:
-                return doc_id[0]
-            else:
-                return None
 
     except Exception as error:
         logging.error("Ошибка при работе с PostgreSQL:", error)
@@ -1190,9 +1118,6 @@ def get_count_stat_msgs_check():
                 stat_msg = result.fetchall()
                 return stat_msg
             else:
-                # raise ValueError(
-                #     "Ошибка при запросе статистики о проверенных сообщениях"
-                # )
                 return
 
     except Exception as error:
