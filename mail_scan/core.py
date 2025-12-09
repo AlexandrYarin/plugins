@@ -418,15 +418,6 @@ class YandexMailScanner:
 
                         if msg_data and msg_data[0] and isinstance(msg_data[1], bytes):
                             try:
-                                raw_email = msg_data[1]
-                                # Логируем первые 200 символов письма
-                                # email_preview = raw_email.decode(
-                                #     "utf-8", errors="ignore"
-                                # )[:200]
-                                # logging.info(
-                                #     f"Сообщение {num} preview: {email_preview}"
-                                # )
-
                                 email_info = parse_email_message(
                                     msg_data, self.last_timestamp
                                 )
@@ -434,7 +425,7 @@ class YandexMailScanner:
                                     email_info["folder"] = folder
                                     emails.append(list(email_info.values()))
                                 else:
-                                    logging.warning(
+                                    logging.debug(
                                         f"Сообщение {num}: parse_email_message вернул None"
                                     )
 

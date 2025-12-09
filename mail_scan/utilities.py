@@ -832,7 +832,7 @@ def parse_email_message(msg_data, date_filter):
     msg_date = _parse_date(msg.get("Date"))
     if date_filter is not None:
         if msg_date < date_filter:
-            logging.debug(
+            logging.info(
                 f"Это пиьсмо уже сканировали. msg_date: {msg_date}, date_filter: {date_filter}"
             )
             return
