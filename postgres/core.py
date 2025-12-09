@@ -1124,6 +1124,26 @@ def get_count_stat_msgs_check():
         raise error
 
 
+def upload_file(file_id):
+    query = """
+            SELECT document 
+            FROM docs
+            WHERE id=%s
+            """
+    try:
+        with PstgCursor() as db:
+            result = db.execute(query, (file_id,))
+            result = result.fetchone()
+            result = bytes(result[0]) if result else False
+            logging.debug("Файл извлечен из БД")
+
+            return result
+
+    except Exception:
+        logging.critical("error in upload_file")
+        raise
+
+
 def get_count_stat_msgs():
     """Подсчет кол-ва новых записей в БД"""
     query = """
