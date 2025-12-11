@@ -771,19 +771,19 @@ def update_deal(deal_id: int):
 def get_hot_deals(deal_ids: list, deadline_interval: int) -> list | None:
     query = """
             SELECT deal_id, deal_title, who_created FROM deals
-            WHERE deal_id IN %s
-                AND  (NOW() > (deadline - INTERVAL '%s hours'))
+            WHERE deal_id = ANY(%s)
+                AND (NOW() > (deadline - (%s * INTERVAL '1 hour')))
             """
     try:
         with PstgCursor() as db:
-            result = db.execute(query, (tuple(deal_ids), deadline_interval))
+            result = db.execute(query, [deal_ids, deadline_interval])
             if result.rowcount > 0:
-                logging.info("Сделка {deal_id} обновлена(закрыта)")
+                logging.info("Сделка обновлена(закрыта)")
                 return result.fetchall()
             return None
 
     except Exception as error:
-        logging.error("Ошибка при работе с PostgreSQL:", error)
+        logging.error("Ошибка при работе с PostgreSQL: %s", error)
         raise
 
 
