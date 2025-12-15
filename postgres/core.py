@@ -958,7 +958,7 @@ def get_manager_tread(manager_email, subject):
 
 def get_click_deals_for_btx_mode():
     query = """
-            SELECT deal_title, region, deadline, type_nmn, files
+            SELECT deal_title, region, deadline, type_nmn, files, body_msg
             FROM orders.threeclick
             WHERE send_btx = false
                 AND gemini_see = true

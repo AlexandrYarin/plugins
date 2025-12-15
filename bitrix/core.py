@@ -18,7 +18,6 @@ DOMAIN, USER_ID, WH_CODE = (
 )
 WEBHOOK_URL = f"https://{DOMAIN}/rest/{USER_ID}/"
 
-
 def parsing_fields(fields: dict, needed_fields: dict) -> bool | dict:
     data = {}
     for field in needed_fields.keys():
@@ -79,7 +78,6 @@ def download_file(download_url) -> list:
         else:
             return [response.content, "xlsx"]
 
-
 def download_file_mode(download_url) -> list:
     # 1. Конфигурация
     LOGIN_URL = f"https://{DOMAIN}/auth/?backurl=%2F"
@@ -125,13 +123,41 @@ def download_file_mode(download_url) -> list:
         raise ValueError("Unknown file format!")
 
 
-def _b24_request(code, method, params=None):
+def _flatten_params(params, parent_key=""):
+    """
+    Преобразует вложенные словари в формат fields[key][subkey]
+    для Битрикс24 REST API
+
+    :param params: Словарь параметров
+    :param parent_key: Родительский ключ (для рекурсии)
+    :return: Плоский словарь с нотацией fields[key]
+    """
+    items = []
+    for key, value in params.items():
+        new_key = f"{parent_key}[{key}]" if parent_key else key
+
+        if isinstance(value, dict):
+            items.extend(_flatten_params(value, new_key).items())
+        elif isinstance(value, (list, tuple)):
+            for i, v in enumerate(value):
+                if isinstance(v, dict):
+                    items.extend(_flatten_params(v, f"{new_key}[{i}]").items())
+                else:
+                    items.append((f"{new_key}[]", v))
+        else:
+            items.append((new_key, value))
+
+    return dict(items)
+
+
+def _b24_request(code, method, params=None, use_json=True):
     """
     Функция для запросов к Bitrix24 API
 
-    :param webhook_url: URL вебхука
+    :param code: Код вебхука
     :param method: Метод API
     :param params: Параметры запроса (словарь)
+    :param use_json: True для отправки JSON, False для form-data (по умолчанию)
     :return: Ответ сервера в формате JSON
     """
     if params is None:
@@ -139,12 +165,20 @@ def _b24_request(code, method, params=None):
 
     url = WEBHOOK_URL + code + "/" + method + ".json"
     count = 0
+
     while count < 3:
         try:
-            response = requests.post(url, json=params, timeout=60)
+            if use_json:
+                # Для методов, которые принимают JSON
+                response = requests.post(url, json=params, timeout=60)
+            else:
+                # Для методов, требующих form-data (большинство CRM методов)
+                flattened = _flatten_params(params)
+                response = requests.post(url, data=flattened, timeout=60)
 
             response.raise_for_status()
             return response.json()
+
         except requests.exceptions.RequestException:
             logging.exception("error in b24_request")
             count += 1
@@ -154,23 +188,76 @@ def _b24_request(code, method, params=None):
             print(f"error in b24: {error}")
             count += 1
 
+    return None
 
-def query_to_bitrix(query_name, raw_result=False, **kwargs):
+
+# def _b24_request(code, method, params=None):
+#     """
+#     Функция для запросов к Bitrix24 API
+#
+#     :param webhook_url: URL вебхука
+#     :param method: Метод API
+#     :param params: Параметры запроса (словарь)
+#     :return: Ответ сервера в формате JSON
+#     """
+#     if params is None:
+#         params = {}
+#
+#     url = WEBHOOK_URL + code + "/" + method + ".json"
+#     count = 0
+#     while count < 3:
+#         try:
+#             response = requests.post(url, json=params, timeout=60)
+#
+#             response.raise_for_status()
+#             return response.json()
+#         except requests.exceptions.RequestException:
+#             logging.exception("error in b24_request")
+#             count += 1
+#             time.sleep(2)
+#             continue
+#         except Exception as error:
+#             print(f"error in b24: {error}")
+#             count += 1
+
+
+def query_to_bitrix(query_name, raw_result=False, use_json=True, **kwargs):
     params = {}
     if kwargs:
         for key, value in kwargs.items():
             params[key] = value
+
     code = WH_CODE[query_name]["code"]
     query = WH_CODE[query_name]["query"]
-    result = _b24_request(code, query, params)
+    result = _b24_request(code, query, params, use_json=use_json)
     time.sleep(1)
+
     if result and result.get("result"):
         if raw_result:
             return result
         return result["result"]
     else:
-        logging.warning(f"Ошибка при запросe {query_name}: {result}")
+        logging.warning(f"Ошибка при запросе {query_name}: {result}")
         return None
+
+
+# def query_to_bitrix(query_name, raw_result=False, **kwargs):
+#     params = {}
+#     if kwargs:
+#         for key, value in kwargs.items():
+#             params[key] = value
+#     code = WH_CODE[query_name]["code"]
+#     query = WH_CODE[query_name]["query"]
+#     result = _b24_request(code, query, params)
+#     time.sleep(1)
+#     if result and result.get("result"):
+#         if raw_result:
+#             return result
+#         return result["result"]
+#     else:
+#         logging.warning(f"Ошибка при запросe {query_name}: {result}")
+#         return None
+#
 
 
 def get_all_pages(method, params={}) -> list | None:
