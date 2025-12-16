@@ -153,7 +153,7 @@ def insert_bitrix_deals():
         "regions",
     )
     sql_copy_command = f"""
-        COPY {table_name} ({", ".join(columns_to_insert)}) 
+        COPY {table_name} ({", ".join(columns_to_insert)})
         FROM STDIN WITH (FORMAT CSV, HEADER, DELIMITER ';')
     """
     try:
@@ -176,7 +176,7 @@ def insert_file(unique_file_id, deal_id, filetype, document, msg_id):
     Функция для вставки файла в таблицу docs в PostgreSQL.
     """
     query = """
-        INSERT INTO docs (id,  deal_id, filetype, document, msg_id) 
+        INSERT INTO docs (id,  deal_id, filetype, document, msg_id)
         VALUES (%s, %s, %s, %s, %s)
         """
 
@@ -195,10 +195,10 @@ def insert_file(unique_file_id, deal_id, filetype, document, msg_id):
 
 def upload_file_mode(file_id):
     query = """
-            SELECT content 
-            FROM files
-            WHERE id=%s
-            """
+        SELECT content
+        FROM files
+        WHERE id=%s
+        """
     try:
         with PstgCursor() as db:
             result = db.execute(query, (file_id,))
@@ -270,7 +270,7 @@ def update_table_msgs_send(msg_id, html_body) -> bool:
 
 def update_table_msgs_reply(msg_id, body=None, file_id=None) -> None:
     query_to_msgs = """
-                    UPDATE msgs 
+                    UPDATE msgs
                     SET is_answered = true, ts_answer = NOW(), body_answer = %s, dock_id = %s
                     WHERE msg_id = %s
                     """
@@ -312,7 +312,7 @@ def read_mails_from_db(param="send_read", *args):
                         JOIN deals AS d
                             ON m.deal_id = d.deal_id
                         WHERE is_answered = false
-                            AND ts_send IS NOT NULL 
+                            AND ts_send IS NOT NULL
                             AND d.is_closed = false
                         """,
         "resend_email": """
@@ -321,7 +321,7 @@ def read_mails_from_db(param="send_read", *args):
                         WHERE id = %s
                         """,
         "check_resend_email": """
-                        SELECT m.msg_id, m.sender, m.receiver, m.contact_name, m.dock_id, m.deadline, d.deal_title 
+                        SELECT m.msg_id, m.sender, m.receiver, m.contact_name, m.dock_id, m.deadline, d.deal_title
                         FROM msgs as m
                         JOIN deals as d
                             ON m.deal_id = d.deal_id
@@ -357,9 +357,9 @@ def read_mails_from_db(param="send_read", *args):
 def get_dock_ids(deal_id):
     query = """
             SELECT msg_id, doc_id
-            FROM rpls 
+            FROM rpls
             WHERE is_answered = true
-                AND doc_id IS NOT NUll 
+                AND doc_id IS NOT NUll
                 AND msg_id IN (select msg_id from msgs where deal_id = %s)
             """
 
@@ -377,7 +377,7 @@ def get_dock_ids(deal_id):
 
 def insert_new_company(**data: list) -> bool:
     query = """
-            INSERT INTO cmps (cmp_id, cmp_name, cmp_types, cmp_nmn, contact_name, contact_email, regions) 
+            INSERT INTO cmps (cmp_id, cmp_name, cmp_types, cmp_nmn, contact_name, contact_email, regions)
             VALUES (%s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (cmp_id) DO NOTHING
                 """
@@ -426,7 +426,7 @@ def insert_new_company(**data: list) -> bool:
 def get_company_info(target_search: str) -> list:
     query = """
             SELECT cmp_id, contact_email
-            FROM cmps 
+            FROM cmps
             WHERE cmp_types = %s
             """
     try:
@@ -443,7 +443,7 @@ def get_company_info(target_search: str) -> list:
 
 def get_companies(ids: list):
     query = """
-            SELECT cmp_id, contact_email 
+            SELECT cmp_id, contact_email
             FROM cmps
             WHERE cmp_id IN %s
             """
@@ -461,7 +461,7 @@ def get_companies(ids: list):
 
 def get_deals_ids(table_name="deals") -> list | bool:
     query = """
-            SELECT deal_id 
+            SELECT deal_id
             FROM {table_name}
             """
     query = query.format(table_name=table_name)
@@ -640,7 +640,7 @@ def update_or_insert_company(operation="insert", **data):
             SET cmp_name = %s,
                 cmp_types = %s,
                 cmp_nmn = %s,
-                contact_name = %s, 
+                contact_name = %s,
                 contact_email = %s,
                 regions = %s,
                 date_modify = %s
@@ -648,7 +648,7 @@ def update_or_insert_company(operation="insert", **data):
                 """
 
     query_insert = """
-            INSERT INTO cmps (cmp_id, cmp_name, cmp_types, cmp_nmn, contact_name, contact_email, regions, date_modify) 
+            INSERT INTO cmps (cmp_id, cmp_name, cmp_types, cmp_nmn, contact_name, contact_email, regions, date_modify)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (cmp_id) DO NOTHING
                 """
@@ -712,7 +712,7 @@ def update_or_insert_company(operation="insert", **data):
 def get_info_ready_deal(deal_id: int) -> bool:
     """Возвращает true, если сделка готова"""
     query = """
-            SELECT deal_id 
+            SELECT deal_id
             FROM msgs
             WHERE deal_id = %s
             GROUP BY deal_id
@@ -917,10 +917,10 @@ def get_last_scan_stamp(manager_email):
 def get_manager_tread(manager_email, subject):
     query = """
             WITH start_msg AS (
-                SELECT msg_id 
+                SELECT msg_id
                 FROM orders.msgs_order
-                WHERE reference = ARRAY[''] 
-                AND (sender = %s OR %s = ANY(receiver)) 
+                WHERE reference = ARRAY['']
+                AND (sender = %s OR %s = ANY(receiver))
                 AND subject = %s
             ),
             ranked_msgs AS (
@@ -929,7 +929,7 @@ def get_manager_tread(manager_email, subject):
                 FROM orders.msgs_order
                 WHERE msg_id IN (SELECT msg_id FROM start_msg)
                 OR EXISTS (
-                    SELECT 1 FROM start_msg 
+                    SELECT 1 FROM start_msg
                     WHERE start_msg.msg_id = ANY(orders.msgs_order.reference)
                 )
             )
@@ -1071,7 +1071,7 @@ def insert_file_to_files(file_data):
 def get_file_content(ids: list):
     query_to_msgs = """
                 SELECT content, file_name FROM files
-                WHERE id = ANY(%s) AND file_name LIKE '%%.xls%%' 
+                WHERE id = ANY(%s) AND file_name LIKE '%%.xls%%'
                     """
     try:
         with PstgCursor() as db:
@@ -1126,7 +1126,7 @@ def get_count_stat_msgs_check():
 
 def upload_file(file_id):
     query = """
-            SELECT document 
+            SELECT document
             FROM docs
             WHERE id=%s
             """

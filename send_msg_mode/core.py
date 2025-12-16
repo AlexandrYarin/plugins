@@ -154,7 +154,7 @@ class YandexSendMsg:
                 # Принудительно устанавливаем .xls расширение
                 attachment_name = f"{attachment_name}.xls"
 
-                print(f"mime_type: {mime_type.split('/')}")
+                logging.debug(f"mime_type: {mime_type.split('/')}")
                 attachment = MIMEBase(*mime_type.split("/"))
                 # attachment.set_payload(xls_binary_data)
                 attachment.set_payload(dock_content)
@@ -254,7 +254,7 @@ class YandexSendMsg:
                 smtp.send_message(self.msg)
 
             logging.info(f"Письмо успешно отправлено. Message-ID: {self.msg_id}")
-            print(f"text: {self.html_body_text}")
+            logging.debug(f"text: {self.html_body_text}")
             return self.html_body_text
 
         except smtplib.SMTPAuthenticationError as e:
@@ -441,7 +441,7 @@ def sending_main(promt_type, values=None):
     config, conf_const = read_config(promt_type, values)
     try:
         for ind, target_email in enumerate(config["TARGET_EMAILS"]):
-            print(f"Отправка письма {ind + 1} из {len(config['TARGET_EMAILS'])}")
+            logging.info(f"Отправка письма {ind + 1} из {len(config['TARGET_EMAILS'])}")
             reciever_email, contanct_name = target_email
             is_sending = send_tracked_email(
                 users_data,
@@ -459,7 +459,7 @@ def sending_main(promt_type, values=None):
                     f"Не удалось отправить сообщение {target_email}, html body пустое"
                 )
                 continue
-            print("Отправлено")
+            logging.info("Отправлено")
 
     except Exception as error:
         logging.error(f"Критическая ошибка в процессе чтения сообщений: {error}")
