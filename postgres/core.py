@@ -117,10 +117,35 @@ class PstgCursor:
         self.conn.rollback()
 
 
+def batch_insert_bitrix_deals(data: list[list], close_immediately=False):
+    # data = {'deal_id', 'deal_title', 'type_deal', 'type_nmn', 'who_created', 'created_ts', 'deadline', 'dock_id','regions'}
+    query = """
+        INSERT INTO deals (deal_id, deal_title, type_deal, type_nmn, who_created, created_ts, deadline, dock_id,regions)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+    """
+
+    query_close = """
+        INSERT INTO deals (deal_id, deal_title, type_deal, type_nmn, who_created, created_ts, deadline, dock_id, regions, is_closed)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,true)
+    """
+
+    try:
+        with PstgCursor() as db:
+            if close_immediately:
+                db.cursor.executemany(query_close, data)
+                db.commit()
+            else:
+                db.cursor.executemany(query, data)
+                db.commit()
+
+            return True
+
+    except Exception as e:
+        logging.exception(f"Ошибка при работе с PostgreSQL: {e}")
+        raise e
+
+
 def insert_bitrix_deals_mode(data):
-    """
-    Функция для подключения к PostgreSQL и вставки одной записи в таблицу messages.
-    """
     query = """
         INSERT INTO deals_document (deal_id, files)
         VALUES (%s, %s)
