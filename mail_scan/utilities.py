@@ -3,6 +3,7 @@ from email.header import decode_header
 from bs4 import BeautifulSoup
 from datetime import datetime
 from pandas import read_excel
+from pprint import pprint
 import email.utils
 import hashlib
 import logging
@@ -14,7 +15,6 @@ import os
 
 try:
     from postgres.core import check_exist_file, insert_file_to_files
-
 except ModuleNotFoundError:
     import os
     import sys
@@ -379,7 +379,16 @@ def extract_email_body_universal_mode(email_body):
     # Сначала удаляем HTML теги с помощью BeautifulSoup
     try:
         soup = BeautifulSoup(email_body, "html.parser")
+        # Заменяем HTML теги на переносы строк ПЕРЕД извлечением текста
+        for tag in soup.find_all(["br", "p", "div"]):
+            if tag.name == "br":
+                tag.replace_with("\n")
+            elif tag.name in ["p", "div"]:
+                # Добавляем перенос после блочных элементов
+                tag.insert_after("\n")
+        # ================================
         text = soup.get_text()
+
     except Exception as e:
         logging.warning(f"BeautifulSoup не сработал, используем regex. Ошибка: {e}")
         # Если BeautifulSoup не работает, используем регулярные выражения
@@ -387,8 +396,9 @@ def extract_email_body_universal_mode(email_body):
 
     # Декодируем HTML сущности
     text = text.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&")
-    # СНАЧАЛА извлекаем подпись
+    #  извлекаем подпись
     signature = extract_signature_from_text(text)
+    logging.debug(f"extracted signature: {signature}")
 
     # Удаляем цитируемый текст и служебную информацию
     lines = text.split("\n")
@@ -790,7 +800,8 @@ def extract_signature_from_text(text: str) -> str | None:
 
     # Извлекаем подпись от разделителя до конца CHECKER
     signature_text = potential_signature[:checker_end]
-    signature_text = signature_text.lstrip("-- ").strip()
+    # signature_text = signature_text.lstrip("-- ").strip()
+    signature_text = signature_text.strip()
 
     # Валидация
     if _is_valid_signature(signature_text):
@@ -870,5 +881,7 @@ def parse_email_message(msg_data, date_filter):
         "text_body": convert_text,
         "signature": signature,
     }
+
+    logging.debug(f"email_data: {email_data}")
 
     return email_data

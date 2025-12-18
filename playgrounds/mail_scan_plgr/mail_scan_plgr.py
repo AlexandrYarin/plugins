@@ -8,18 +8,34 @@ import re
 import time
 import socket
 import logging
+import sys
+from pathlib import Path
 
-try:
-    from mail_scan.utilities import parse_email_message
-    from read_pass.core import read_pass
-except Exception:
-    from .utilities import parse_email_message
-    from read_pass.core import read_pass
+project_root = Path(__file__).parents[2]
+sys.path.insert(0, str(project_root))
+
+from mail_scan.utilities import parse_email_message
+from read_pass.core import read_pass
 
 
 IMAP_SERVER = "imap.yandex.ru"
 PORT = 993
 SKIP_FOLDERS = ["Drafts", "Drafts|template", "Spam", "Trash", "Archive"]
+
+logging.basicConfig(
+    level=logging.DEBUG,  # Уровень логирования
+    filename="logs.log",  # Имя файла для логов (необязательно)
+    format="%(asctime)s - %(levelname)s - %(message)s",  # Формат вывода
+    encoding="utf-8",
+)
+logging.StreamHandler(sys.stdout)
+
+console = logging.StreamHandler()
+console.setLevel(logging.INFO)
+logging.getLogger("").addHandler(console)
+# # выключение дублирования логовор в airflow
+logger = logging.getLogger(__name__)
+logger.propagate = False
 
 
 def decode_imap_folder_name(encoded_name):
@@ -415,39 +431,39 @@ class YandexMailScanner:
         self.close_connection()
 
 
-# params_template = {
-#     "status": {
-#         "ALL": False,
-#         "UNSEEN": False,
-#         "SEEN": False,
-#         "ANSWERED": False,
-#         "FLAGGED": False,
-#         "DRAFT": False,
-#         "DELETED": False,
-#     },
-#     "dates": {"SINCE": None, "BEFORE": None},  # все в ковычках 1-Feb-2020
-#     "addresses": {  # все в ковычках
-#         "FROM": None,
-#         "TO": None,
-#         "CC": None,
-#         "BCC": None,
-#         "SUBJECT": None,
-#         "BODY": None,
-#         "TEXT": None,
-#     },
-#     "sizes": {"LARGE": None, "SMALLER": None},  # число в байтах
-#     "attachments": False,  # Content-Disposition attachment -> без ковычек если надо смс с файлом
-# }
-#
-# target = "aa@print-1.ru"
-# acc = read_pass(manager_email=target)
-# since_date = datetime(2025, 9, 29).strftime("%d-%b-%Y")
-# before_date = datetime(2025, 10, 2).strftime("%d-%b-%Y")
-# folder = ["Sent"]
-#
-# params = {"dates": {"SINCE": since_date, "BEFORE": before_date}}
-#
-# date_filter = datetime.now() - timedelta(days=60)
-#
-# scaner = YandexMailScanner(acc, params, date_filter, limit=20)
-# _ = scaner.scan_messages(folder)
+params_template = {
+    "status": {
+        "ALL": False,
+        "UNSEEN": False,
+        "SEEN": False,
+        "ANSWERED": False,
+        "FLAGGED": False,
+        "DRAFT": False,
+        "DELETED": False,
+    },
+    "dates": {"SINCE": None, "BEFORE": None},  # все в ковычках 1-Feb-2020
+    "addresses": {  # все в ковычках
+        "FROM": None,
+        "TO": None,
+        "CC": None,
+        "BCC": None,
+        "SUBJECT": None,
+        "BODY": None,
+        "TEXT": None,
+    },
+    "sizes": {"LARGE": None, "SMALLER": None},  # число в байтах
+    "attachments": False,  # Content-Disposition attachment -> без ковычек если надо смс с файлом
+}
+
+target = "aa@print-1.ru"
+acc = read_pass(manager_email=target)
+since_date = datetime(2025, 12, 1).strftime("%d-%b-%Y")
+before_date = datetime(2025, 12, 2).strftime("%d-%b-%Y")
+folder = ["Sent"]
+
+params = {"dates": {"SINCE": since_date, "BEFORE": before_date}}
+
+date_filter = datetime.now() - timedelta(days=60)
+
+scaner = YandexMailScanner(acc, params, date_filter, limit=20)
+_ = scaner.scan_messages(folder)
