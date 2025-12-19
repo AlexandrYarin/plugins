@@ -765,6 +765,8 @@ def find_manager_signature_by_email(text: str, manager_email: str) -> str | None
     Returns:
         str | None: Найденная подпись или None, если подпись не найдена
     """
+    if manager_email and "@print-1.ru" in manager_email:
+        return "NotNecessary"
     # Ищем все строки, содержащие email менеджера
     lines = text.split("\n")
 
