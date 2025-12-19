@@ -319,7 +319,7 @@ class YandexMailScanner:
 
         return self._safe_operation(_fetch)
 
-    def scan_messages(self, folders_list) -> list:
+    def scan_messages(self, folders_list) -> tuple:
         """Сканирование сообщений"""
         search_criteria = self.search_criteria
 
@@ -351,35 +351,24 @@ class YandexMailScanner:
                 print(f"Найдено {len(message_list)} сообщений в папке '{folder}'")
 
                 # Обработка сообщений
+
                 for ind, num in enumerate(message_list):
                     try:
                         msg_data = self._safe_operation(self._fetch_message, num)
 
                         if msg_data and msg_data[0] and isinstance(msg_data[1], bytes):
                             try:
-                                raw_email = msg_data[1]
-                                # Логируем первые 200 символов письма
-                                email_preview = raw_email.decode(
-                                    "utf-8", errors="ignore"
-                                )[:200]
-                                print(f"Сообщение {num} preview: {email_preview}")
-
                                 email_info = parse_email_message(
                                     msg_data, self.last_timestamp
                                 )
-                                json_formatted = json.dumps(
-                                    email_info,
-                                    indent=4,
-                                    ensure_ascii=False,
-                                    default=str,
-                                )
-                                print(json_formatted)
-                                input()
+                                # input()
+                                # print("--" * 15)
                                 if email_info:
                                     email_info["folder"] = folder
-                                    emails.append(list(email_info.values()))
+                                    emails.append(email_info)
                                     if self.limit and ind + 1 == self.limit:
-                                        return emails
+                                        scan_end_stamp = datetime.now()
+                                        return emails, scan_end_stamp
                                 else:
                                     print(
                                         f"Сообщение {num}: parse_email_message вернул None"
@@ -401,7 +390,7 @@ class YandexMailScanner:
                 continue
 
         scan_end_stamp = datetime.now()
-        return [emails, scan_end_stamp]
+        return emails, scan_end_stamp
 
     def _parse_folder_line(self, folder_line) -> str | None:
         """Парсинг строки с информацией о папке (без изменений)"""
@@ -431,39 +420,100 @@ class YandexMailScanner:
         self.close_connection()
 
 
-# params_template = {
-#     "status": {
-#         "ALL": False,
-#         "UNSEEN": False,
-#         "SEEN": False,
-#         "ANSWERED": False,
-#         "FLAGGED": False,
-#         "DRAFT": False,
-#         "DELETED": False,
-#     },
-#     "dates": {"SINCE": None, "BEFORE": None},  # все в ковычках 1-Feb-2020
-#     "addresses": {  # все в ковычках
-#         "FROM": None,
-#         "TO": None,
-#         "CC": None,
-#         "BCC": None,
-#         "SUBJECT": None,
-#         "BODY": None,
-#         "TEXT": None,
-#     },
-#     "sizes": {"LARGE": None, "SMALLER": None},  # число в байтах
-#     "attachments": False,  # Content-Disposition attachment -> без ковычек если надо смс с файлом
-# }
-#
-# target = "aa@print-1.ru"
-# acc = read_pass(manager_email=target)
-# since_date = datetime(2025, 12, 17).strftime("%d-%b-%Y")
-# before_date = datetime(2025, 12, 18).strftime("%d-%b-%Y")
-# folder = ["Sent"]
-#
-# params = {"dates": {"SINCE": since_date, "BEFORE": before_date}}
-#
-# date_filter = datetime.now() - timedelta(days=60)
-#
-# scaner = YandexMailScanner(acc, params, date_filter, limit=5)
-# _ = scaner.scan_messages(folder)
+def launch():
+    params_template = {
+        "status": {
+            "ALL": False,
+            "UNSEEN": False,
+            "SEEN": False,
+            "ANSWERED": False,
+            "FLAGGED": False,
+            "DRAFT": False,
+            "DELETED": False,
+        },
+        "dates": {"SINCE": None, "BEFORE": None},  # все в ковычках 1-Feb-2020
+        "addresses": {  # все в ковычках
+            "FROM": None,
+            "TO": None,
+            "CC": None,
+            "BCC": None,
+            "SUBJECT": None,
+            "BODY": None,
+            "TEXT": None,
+        },
+        "sizes": {"LARGE": None, "SMALLER": None},  # число в байтах
+        "attachments": False,  # Content-Disposition attachment -> без ковычек если надо сообщение с файлом
+    }
+
+    targets = ["onk@print-1.ru", "nz@print-1.ru", "yat@print-1.ru"]
+
+    targets = [
+        "aa@print-1.ru",
+        "lt@print-1.ru",
+        "sp@print-1.ru",
+        "nz@print-1.ru",
+        "anb@print-1.ru",
+        "ut@print-1.ru",
+        "onk@print-1.ru",
+        "yat@print-1.ru",
+        "ich@print-1.ru",
+        "ml@print-1.ru",
+        "ta@print-1.ru",
+        "pr@print-1.ru",
+        "al@print-1.ru",
+        "ng@print-1.ru",
+        "ez@print-1.ru",
+        "mk@print-1.ru",
+        "mp@print-1.ru",
+        "ag@print-1.ru",
+        "nb@print-1.ru",
+        "vk@print-1.ru",
+        "5@print-1.ru",
+        "av@print-1.ru",
+        "as@print-1.ru",
+        "au@print-1.ru",
+        "ud@print-1.ru",
+        "sr@print-1.ru",
+        "at@print-1.ru",
+        "kk@print-1.ru",
+        "mu@print-1.ru",
+        "eo@print-1.ru",
+        "am@print-1.ru",
+        "uv@print-1.ru",
+    ]
+    count_err, count_succ = 0, 0
+
+    def count_errs_func(emails):
+        err, succ = (
+            0,
+            0,
+        )
+        for msg in emails:
+            if msg["signature"] is None:
+                err += 1
+            else:
+                succ += 1
+        return err, succ
+
+    LIMIT = 20
+
+    for ind, target in enumerate(targets):
+        print(f"{ind + 1}/{len(targets)}")
+        acc = read_pass(manager_email=target)
+        since_date = datetime(2025, 12, 15).strftime("%d-%b-%Y")
+        before_date = datetime(2025, 12, 18).strftime("%d-%b-%Y")
+        folder = ["Sent"]
+
+        params = {"dates": {"SINCE": since_date, "BEFORE": before_date}}
+
+        date_filter = datetime.now() - timedelta(days=60)
+
+        scaner = YandexMailScanner(acc, params, date_filter, limit=LIMIT)
+        emails, _ = scaner.scan_messages(folder)
+        err_msg, succ_msg = count_errs_func(emails)
+        if err_msg > 0:
+            print(f"err in {target}")
+        count_err += err_msg
+        count_succ += succ_msg
+
+    print(f"ERRS: {count_err}, SUCC: {count_succ} | {LIMIT * len(targets)}")

@@ -3,9 +3,7 @@ from email.header import decode_header
 from bs4 import BeautifulSoup
 from datetime import datetime
 from pandas import read_excel
-from pprint import pprint
 import email.utils
-import hashlib
 import logging
 import base64
 import email
@@ -13,16 +11,6 @@ import io
 import re
 import os
 
-try:
-    from postgres.core import check_exist_file, insert_file_to_files
-except ModuleNotFoundError:
-    import os
-    import sys
-
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root = os.path.join(current_dir, "..")
-    sys.path.insert(0, project_root)
-    from plugins.postgres.core import insert_file_to_files
 
 try:
     from utilities.core import get_file_id_from_db
@@ -339,38 +327,38 @@ def extract_parts_from_email(email_message) -> tuple[list, list]:
     return text_parts, attachments
 
 
-def extract_email_body_universal(email_body) -> str:
-    """
-    Универсальная функция для извлечения основного содержимого письма
-    Удаляет HTML теги, цитируемый текст и служебную информацию
-    """
-    logging.debug("Начало обработки тела письма для извлечения основного содержимого")
-    # Сначала удаляем HTML теги с помощью BeautifulSoup
-    try:
-        soup = BeautifulSoup(email_body, "html.parser")
-        # ---------------------------------
-        # Заменяем HTML теги на переносы строк ПЕРЕД извлечением текста
-        for tag in soup.find_all(["br", "p", "div"]):
-            if tag.name == "br":
-                tag.replace_with("\n")
-            elif tag.name in ["p", "div"]:
-                # Добавляем перенос после блочных элементов
-                tag.insert_after("\n")
-        # ---------------------------------
-        text = soup.get_text()
-    except Exception as e:
-        logging.warning(f"BeautifulSoup не сработал, используем regex. Ошибка: {e}")
-        # Если BeautifulSoup не работает, используем регулярные выражения
-        text = re.sub(r"&lt;[^&gt;]+&gt;", "", email_body)
+# def extract_email_body_universal(email_body) -> str:
+#     """
+#     Универсальная функция для извлечения основного содержимого письма
+#     Удаляет HTML теги, цитируемый текст и служебную информацию
+#     """
+#     logging.debug("Начало обработки тела письма для извлечения основного содержимого")
+#     # Сначала удаляем HTML теги с помощью BeautifulSoup
+#     try:
+#         soup = BeautifulSoup(email_body, "html.parser")
+#         # ---------------------------------
+#         # Заменяем HTML теги на переносы строк ПЕРЕД извлечением текста
+#         for tag in soup.find_all(["br", "p", "div"]):
+#             if tag.name == "br":
+#                 tag.replace_with("\n")
+#             elif tag.name in ["p", "div"]:
+#                 # Добавляем перенос после блочных элементов
+#                 tag.insert_after("\n")
+#         # ---------------------------------
+#         text = soup.get_text()
+#     except Exception as e:
+#         logging.warning(f"BeautifulSoup не сработал, используем regex. Ошибка: {e}")
+#         # Если BeautifulSoup не работает, используем регулярные выражения
+#         text = re.sub(r"&lt;[^&gt;]+&gt;", "", email_body)
+#
+#     # Декодируем HTML сущности
+#     text = text.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&").strip()
+#
+#     logging.debug("Обработка тела письма завершена")
+#     return text
 
-    # Декодируем HTML сущности
-    text = text.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&").strip()
 
-    logging.debug("Обработка тела письма завершена")
-    return text
-
-
-def extract_email_body_universal_mode(email_body):
+def extract_email_body_universal_mode(email_body, sender):
     """
     Универсальная функция для извлечения основного содержимого письма
     Удаляет HTML теги, цитируемый текст и служебную информацию
@@ -397,7 +385,8 @@ def extract_email_body_universal_mode(email_body):
     # Декодируем HTML сущности
     text = text.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&")
     #  извлекаем подпись
-    signature = extract_signature_from_text(text)
+    # signature = extract_signature_from_text(text, sender)
+    signature = find_manager_signature_by_email(text, sender)
     logging.debug(f"extracted signature: {signature}")
 
     # Удаляем цитируемый текст и служебную информацию
@@ -488,7 +477,7 @@ def _check_file_name(filename: str, reserv: list) -> str:
         return filename
 
 
-def _return_body_mail(email_message, reserv_fn: list) -> dict:
+def _return_body_mail(email_message, reserv_fn: list, sender) -> dict:
     """Извлечение тела письма и подсчет вложений"""
     logging.debug("Начало извлечения тела письма")
 
@@ -575,7 +564,7 @@ def _return_body_mail(email_message, reserv_fn: list) -> dict:
         body = _decode_part_content(email_message, "simple")
 
     logging.debug("---Начинаем извлечение основного содержимого")
-    final_body, signature = extract_email_body_universal_mode(body)
+    final_body, signature = extract_email_body_universal_mode(body, sender)
     logging.debug("---Завершена обработка письма")
 
     return {
@@ -667,7 +656,7 @@ def convert_from_func(msg) -> str:
         return "unknown@unknown.com"
 
 
-# XXX: DEPRECATED
+# DEPRECATED:
 #
 # def convert_email(email: str) -> str:
 #     new_email = ""
@@ -728,10 +717,13 @@ def _is_valid_signature(signature_text):
     Проверяет, является ли текст валидной подписью
     """
     # Убираем начальные "--"
-    clean_signature = signature_text.lstrip("-").strip()
+    # clean_signature = signature_text.lstrip("-").strip()
+
+    print("------------")
+    logging.debug(f"debug clean_signature: {signature_text}")
 
     # Проверяем длину (разумные пределы для подписи)
-    if len(clean_signature) < 10 or len(clean_signature) > 500:
+    if len(signature_text) < 10 or len(signature_text) > 500:
         logging.debug("Подпись не валидна, размер подписи не корректен")
         return False
 
@@ -747,27 +739,130 @@ def _is_valid_signature(signature_text):
         "fwd:",
     ]
 
-    if any(keyword in clean_signature.lower() for keyword in conversation_keywords):
-        logging.debug(f"Подпись не валидна, лишние слова в подписи: {clean_signature}")
+    if any(keyword in signature_text.lower() for keyword in conversation_keywords):
+        logging.debug(f"Подпись не валидна, лишние слова в подписи: {signature_text}")
         return False
 
     # Проверяем количество строк (подпись обычно не очень длинная)
-    lines = clean_signature.split("\n")
+    lines = signature_text.split("\n")
     if len(lines) > 16:  # Слишком много строк для подписи
         logging.debug(
-            f"Подпись не валидна,слишком много строчек для подписи: {clean_signature}"
+            f"Подпись не валидна,слишком много строчек для подписи: {signature_text}"
         )
         return False
 
     return True
 
 
-def extract_signature_from_text(text: str) -> str | None:
+def find_manager_signature_by_email(text: str, manager_email: str) -> str | None:
+    """
+    Находит подпись менеджера по указанному email в тексте письма.
+
+    Args:
+        text (str): Текст письма, в котором нужно искать подпись
+        manager_email (str): Email менеджера, который должен быть в подписи
+
+    Returns:
+        str | None: Найденная подпись или None, если подпись не найдена
+    """
+    # Ищем все строки, содержащие email менеджера
+    lines = text.split("\n")
+
+    # Находим индекс строки, содержащей email менеджера
+    email_line_idx = -1
+
+    # Проверяем разные возможные форматы указания email
+    email_formats = [
+        rf"Почта:\s*{re.escape(manager_email)}",  # Почта: nz@print-1.ru
+        rf"E-mail:\s*{re.escape(manager_email)}",  # E-mail: nz@print-1.ru
+        rf"Email:\s*{re.escape(manager_email)}",  # Email: nz@print-1.ru
+        rf"{re.escape(manager_email)}",  # Просто email в строке
+    ]
+
+    for email_format in email_formats:
+        for i, line in enumerate(lines):
+            if re.search(email_format, line, re.IGNORECASE):
+                email_line_idx = i
+                break
+        if email_line_idx != -1:
+            break
+
+    # Если строка с email не найдена, возвращаем None
+    if email_line_idx == -1:
+        return None
+
+    # Определяем начало подписи - ищем вверх от строки с email
+    start_idx = email_line_idx
+    # Ищем начало блока подписи, обычно начинается с имени/фамилии или "С уважением"
+    for i in range(email_line_idx, max(-1, email_line_idx - 10), -1):
+        line = lines[i].strip()
+
+        # Если встречаем пустую строку перед подписью, возможно, это начало
+        if not line and i < email_line_idx:
+            start_idx = i + 1
+            break
+
+        # Если встречаем строку с "С уважением" или "Best regards", это начало подписи
+        if re.search(
+            r"(с\s*уважением|best\s*regards|cordially|thanks)", line, re.IGNORECASE
+        ):
+            start_idx = i
+            break
+
+        # Если встречаем имя или фамилию (обычно первые строки подписи)
+        # Проверяем, есть ли в строке какие-то имена (без ключевых слов)
+        if len(line) > 2 and not re.search(
+            r"(тема|от|кому|дата|subject|from|to|date|www\.|https?://)",
+            line,
+            re.IGNORECASE,
+        ):
+            start_idx = i
+
+    # Определяем конец подписи - ищем вниз от строки с email
+    end_idx = email_line_idx
+    for i in range(email_line_idx, min(len(lines), email_line_idx + 10)):
+        line = lines[i].strip()
+
+        # Если встречаем пустую строку после подписи, возможно, это конец
+        if not line and i > email_line_idx:
+            end_idx = i
+            break
+
+        # Если встречаем ссылки или что-то, что выходит за рамки подписи
+        if re.search(r"(http|www\.|@|https?://)", line) and i > email_line_idx:
+            # Но если это часть подписи (сайт компании), продолжаем
+            if not re.search(r"(сайт|website)", line, re.IGNORECASE):
+                end_idx = i
+                break
+        else:
+            end_idx = i
+
+    # Формируем подпись
+    signature_lines = lines[start_idx : end_idx + 1]
+    signature = "\n".join(
+        sig_line.strip() for sig_line in signature_lines if sig_line.strip()
+    )
+
+    # Проверяем, что подпись содержит email менеджера
+    if manager_email.lower() not in signature.lower():
+        return None
+
+    if _is_valid_signature(signature):
+        return signature.strip()
+    else:
+        logging.debug("Подпись не прошла валидацию")
+        return None
+
+
+def extract_signature_from_text(text: str, sender) -> str | None:
     """
     Извлекает подпись из текста письма.
     Ищет разделитель '-- ' и валидирует наличие CHECKER URL.
     """
     CHECKER = "https://str-art.ru"
+
+    if sender and "@print-1.ru" not in sender:
+        return "NotNecessary"
 
     if not text:
         logging.warning("Текст пустой")
@@ -850,13 +945,10 @@ def parse_email_message(msg_data, date_filter):
 
     subject = convert_subject(decode_mime_words(msg.get("Subject", "")))
     receivers = convert_receivers(msg)
-    # NOTE: поменял на новую функцию convert_from_func
-    #
-    # convert_from = convert_email(decode_mime_words(msg.get("From", "")))
     convert_from = convert_from_func(msg)
     reference = convert_reference(msg)
 
-    msg_content: dict = _return_body_mail(msg, [subject, convert_from])
+    msg_content: dict = _return_body_mail(msg, [subject, convert_from], convert_from)
     (text, signature, attachments_val, attachments_data) = (
         msg_content["body"],
         msg_content["signature"],

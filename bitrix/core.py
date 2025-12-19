@@ -18,6 +18,7 @@ DOMAIN, USER_ID, WH_CODE = (
 )
 WEBHOOK_URL = f"https://{DOMAIN}/rest/{USER_ID}/"
 
+
 def parsing_fields(fields: dict, needed_fields: dict) -> bool | dict:
     data = {}
     for field in needed_fields.keys():
@@ -77,6 +78,7 @@ def download_file(download_url) -> list:
             raise ValueError("Файл не является XLS-документом!")
         else:
             return [response.content, "xlsx"]
+
 
 def download_file_mode(download_url) -> list:
     # 1. Конфигурация

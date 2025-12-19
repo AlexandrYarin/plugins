@@ -118,7 +118,7 @@ def read_pass(manager_email=None) -> list | None | dict:
             {"email": email, "password": _decrypt_password_fernet(password, phrase)}
         )
     if data_mails != {}:
-        logging.warning("Почтовые данные успешно загружены")
+        logging.info("Почтовые данные успешно загружены")
         return data_mails
     else:
         logging.warning("Почтовые данные не найдены")
