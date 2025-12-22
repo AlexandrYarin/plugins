@@ -754,6 +754,43 @@ def _is_valid_signature(signature_text):
     return True
 
 
+def extract_email_body_universal(email_body) -> str:
+    """
+    Универсальная функция для извлечения основного содержимого письма
+    Удаляет HTML теги, цитируемый текст и служебную информацию
+    """
+
+    logging.debug("Начало обработки тела письма для извлечения основного содержимого")
+
+    # Сначала удаляем HTML теги с помощью BeautifulSoup
+    try:
+        soup = BeautifulSoup(email_body, "html.parser")
+        # ---------------------------------
+        # Заменяем HTML теги на переносы строк ПЕРЕД извлечением текста
+        for tag in soup.find_all(["br", "p", "div"]):
+            if tag.name == "br":
+                tag.replace_with("\n")
+
+            elif tag.name in ["p", "div"]:
+                # Добавляем перенос после блочных элементов
+
+                tag.insert_after("\n")
+
+        # ---------------------------------
+        text = soup.get_text()
+
+    except Exception as e:
+        logging.warning(f"BeautifulSoup не сработал, используем regex. Ошибка: {e}")
+        # Если BeautifulSoup не работает, используем регулярные выражения
+        text = re.sub(r"&lt;[^&gt;]+&gt;", "", email_body)
+
+    # Декодируем HTML сущности
+    text = text.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&").strip()
+    logging.debug("Обработка тела письма завершена")
+
+    return text
+
+
 def find_manager_signature_by_email(text: str, manager_email: str) -> str | None:
     """
     Находит подпись менеджера по указанному email в тексте письма.
