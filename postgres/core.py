@@ -296,7 +296,7 @@ def update_table_msgs_send(msg_id, html_body) -> bool:
 def update_table_msgs_reply(msg_id, body=None, file_id=None) -> None:
     query_to_msgs = """
                     UPDATE msgs
-                    SET is_answered = true, ts_answer = NOW(), body_answer = %s, dock_id = %s
+                    SET is_answered = true, ts_answer = NOW(), body_answer = %s, dock_id_answered = %s
                     WHERE msg_id = %s
                     """
     if body is None:
@@ -583,7 +583,7 @@ def get_reply_files_mode(deal_id) -> list | None:
     query = """
             SELECT c.cmp_name, f.id, f.content
             FROM files AS f
-            JOIN msgs AS m ON f.id = m.dock_id
+            JOIN msgs AS m ON f.id = m.dock_id_answered
             JOIN cmps AS c ON m.company_id = c.cmp_id
             WHERE m.deal_id = %s AND m.is_answered = true
             """

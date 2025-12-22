@@ -186,7 +186,7 @@ def get_file_id_from_db(content: bytes, file_name: str | None, verbose=False) ->
                 "content": content,
             }
 
-            file_id: int = insert_file_to_files(attachment_info)
+            file_id = insert_file_to_files(attachment_info)
             if file_id is None:
                 raise ValueError("Не вернул file_id после insert в таблицу files")
 
