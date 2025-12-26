@@ -561,6 +561,24 @@ def for_google() -> list | bool:
         raise
 
 
+def create_msgs_mode(*data):
+    query = """
+            INSERT INTO msgs (deal_id, sender, company_id, receiver, contact_name, dock_id, deadline)
+            VALUES (%s, %s, %s, %s, %s, %s, %s) ON CONFLICT (msg_id, deal_id) DO NOTHING
+            """
+
+    if len(data) != 7:
+        raise ValueError("Не хватает данных для создания сообщения")
+    try:
+        with PstgCursor() as db:
+            _ = db.execute(query, tuple(data), autocommit=True)
+            return True
+
+    except Exception as error:
+        logging.exception("Ошибка при работе с PostgreSQL:", error)
+        raise
+
+
 def create_msgs(*data):
     query = """
             INSERT INTO msgs (msg_id, deal_id, sender, company_id, receiver, contact_name, dock_id, deadline)
