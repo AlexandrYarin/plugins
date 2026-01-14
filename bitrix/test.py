@@ -1,12 +1,8 @@
-from core import query_to_bitrix
+# Импорт работает и изнутри папки, и снаружи
+try:
+    from bitrix.explorer import Companies, Deals, Contacts, Leads, Requisites, Users
+except ImportError:
+    from explorer import Companies, Deals, Contacts, Leads, Requisites, Users
 
-deal_id = 5044
-comment_text = "Тестовый  комментарий"
 
-params = {
-    "fields": {"ENTITY_ID": deal_id, "ENTITY_TYPE": "deal", "COMMENT": comment_text}
-}
-params2 = {"ID": deal_id}
-
-res = query_to_bitrix("deal_info", **params2)
-print(res)
+Companies.find(type="Поставщик").to_excel("suppliers.xlsx")
