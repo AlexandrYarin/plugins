@@ -677,6 +677,26 @@ def get_company_ids_and_modearate() -> list | None:
         raise
 
 
+def get_company_max_date_modify() -> str | None:
+    """Возвращает максимальную дату модификации компаний в формате ISO для фильтра Битрикс"""
+    query = """
+            SELECT MAX(date_modify) FROM cmps
+            """
+    try:
+        with PstgCursor() as db:
+            result = db.execute(query)
+            max_date = result.fetchone()
+            logging.info("Запрос на максимальную дату модификации компаний")
+            if max_date and max_date[0]:
+                return max_date[0].strftime("%Y-%m-%dT%H:%M:%S")
+            else:
+                return None
+
+    except Exception as error:
+        logging.error("Ошибка при работе с PostgreSQL:", error)
+        raise
+
+
 def update_or_insert_company(operation="insert", **data):
     query_update = """
             UPDATE cmps
